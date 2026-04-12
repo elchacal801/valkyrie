@@ -100,7 +100,7 @@ Evidence (read-only mount)
 
 ```bash
 # On SIFT Workstation
-curl -fsSL https://raw.githubusercontent.com/elchacal801/find-evil-agent/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elchacal801/valkyrie/main/install.sh | bash
 
 # Run an investigation
 /investigate --guided --evidence-path /cases/CASE-001/evidence/

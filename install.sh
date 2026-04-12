@@ -190,7 +190,7 @@ else
     else
         info "Cloning from GitHub..."
         sudo mkdir -p "$(dirname "$INSTALL_DIR")"
-        sudo git clone https://github.com/elchacal801/find-evil-agent.git "$INSTALL_DIR"
+        sudo git clone https://github.com/elchacal801/valkyrie.git "$INSTALL_DIR"
         sudo chown -R "$(whoami):$(id -gn)" "$INSTALL_DIR"
     fi
     cd "$INSTALL_DIR"
