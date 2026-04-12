@@ -151,4 +151,4 @@ MIT -- see [LICENSE](LICENSE).
 
 ## Author
 
-Diego Parra / [CrimsonVector Security](https://github.com/elchacal801)
+Diego Parra / [CrimsonVector Security](https://crimsonvector.com/)
