@@ -1,0 +1,19 @@
+Volatility 3 Framework 2.5.0
+
+Process: svchost.exe Pid: 4832 Address: 0x00400000 Vad Tag: VadS Protection: PAGE_EXECUTE_READWRITE
+0x00400000  4d 5a 90 00 03 00 00 00 04 00 00 00 ff ff 00 00   MZ..............
+0x00400010  b8 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00   ........@.......
+0x00400020  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0x00400030  00 00 00 00 00 00 00 00 00 00 00 00 d8 00 00 00   ................
+
+Process: explorer.exe Pid: 2148 Address: 0x7ffa1000 Vad Tag: VadS Protection: PAGE_EXECUTE_READWRITE
+0x7ffa1000  48 89 5c 24 08 48 89 74 24 10 57 48 83 ec 20 49   H.\$.H.t$.WH.. I
+0x7ffa1010  8b f8 8b da 48 8b f1 83 fa 01 75 20 48 8d 0d c8   ....H.....u H...
+0x7ffa1020  00 00 00 e8 b7 f3 ff ff 85 c0 74 0e 48 8b 4e 28   ..........t.H.N(
+0x7ffa1030  48 8b 01 ff 50 18 85 c0 75 06 33 c0 eb 56 8b d3   H...P...u.3..V..
+
+Process: chrome.exe Pid: 3456 Address: 0x55a00000 Vad Tag: VadS Protection: PAGE_EXECUTE_READWRITE
+0x55a00000  cc cc cc cc cc cc cc cc 48 89 5c 24 10 48 89 7c   ........H.\$.H.|
+0x55a00010  24 18 55 48 8d ac 24 70 ff ff ff 48 81 ec 90 01   $.UH..$p...H....
+0x55a00020  00 00 48 8b 05 a7 5d 09 00 48 33 c4 48 89 45 70   ..H...]..H3.H.Ep
+0x55a00030  4c 8b 05 f6 bb 08 00 48 8b fa 48 8b d9 45 33 c9   L......H..H..E3.

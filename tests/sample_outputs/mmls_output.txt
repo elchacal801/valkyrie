@@ -1,0 +1,10 @@
+DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+000:  Meta      0000000000   0000000000   0000000001   Primary Table (#0)
+001:  -------   0000000000   0000002047   0000002048   Unallocated
+002:  000:000   0000002048   0001026047   0001024000   NTFS / exFAT (0x07)
+003:  000:001   0001026048   0002050047   0001024000   NTFS / exFAT (0x07)
+004:  -------   0002050048   0002097151   0000047104   Unallocated

@@ -1,0 +1,9 @@
+CobaltStrike_Beacon_Encoded /cases/CASE-001/extractions/svchost.exe
+0x1a4:$s1: %s.%s.%s.%s
+0x2f0:$s2: could not connect to pipe
+0x580:$s3: %s as %s\\%s: %d
+0x8a0:$s4: beacon.x64.dll
+Suspicious_PowerShell_Download /cases/CASE-001/extractions/update.ps1
+0x0:$ps1: Invoke-WebRequest
+0x40:$ps2: DownloadString
+0x90:$ps3: -EncodedCommand

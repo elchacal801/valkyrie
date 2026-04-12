@@ -59,6 +59,12 @@ BLOCKED_BINARIES: set[str] = {
     "sh",
     "zsh",
     "fish",
+    "cmd",
+    "powershell",
+    "pwsh",
+    "wscript",
+    "cscript",
+    "mshta",
     "python",
     "python3",
     "perl",
@@ -84,8 +90,12 @@ def check_binary(binary: str) -> str | None:
 
     Returns None if allowed, or a reason string if blocked.
     """
-    # Normalize: strip path, lowercase
+    # Normalize: strip path, lowercase, strip common extensions
     name = binary.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].lower()
+    for ext in (".exe", ".bat", ".cmd", ".com", ".ps1", ".vbs"):
+        if name.endswith(ext):
+            name = name[: -len(ext)]
+            break
 
     if name in BLOCKED_BINARIES:
         return f"Blocked binary: '{name}' is on the VALKYRIE denylist"

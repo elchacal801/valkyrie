@@ -169,7 +169,7 @@ def _parse_generic_table(raw: str) -> list[dict[str, Any]]:
     """Parse Volatility's generic table output format.
 
     Volatility 3 outputs a header line followed by data rows separated
-    by whitespace. This parser handles the common case.
+    by tabs or 2+ whitespace. This parser handles both formats.
     """
     lines = [l for l in raw.splitlines() if l.strip()]
     if len(lines) < 2:
@@ -182,8 +182,15 @@ def _parse_generic_table(raw: str) -> list[dict[str, Any]]:
             header_idx = i
             break
 
-    # Parse header — split on 2+ whitespace
-    headers = re.split(r"\s{2,}", lines[header_idx].strip())
+    header_line = lines[header_idx].strip()
+
+    # Detect delimiter: if tabs present, use tab; otherwise use 2+ whitespace
+    use_tabs = "\t" in header_line
+    if use_tabs:
+        headers = [h.strip() for h in header_line.split("\t") if h.strip()]
+    else:
+        headers = re.split(r"\s{2,}", header_line)
+
     if not headers:
         return []
 
@@ -193,7 +200,10 @@ def _parse_generic_table(raw: str) -> list[dict[str, Any]]:
         if not line or line.startswith("*") or line.startswith("-"):
             continue
 
-        values = re.split(r"\s{2,}", line, maxsplit=len(headers) - 1)
+        if use_tabs:
+            values = [v.strip() for v in line.split("\t")]
+        else:
+            values = re.split(r"\s{2,}", line, maxsplit=len(headers) - 1)
 
         if len(values) >= len(headers):
             rows.append(dict(zip(headers, values[:len(headers)])))

@@ -188,19 +188,21 @@ def _parse_fls_output(raw: str) -> list[dict[str, Any]]:
             continue
 
         # Parse the type indicator and inode
-        match = re.match(r"([rd/\-\*]+)\s+(\d+)(?:-\d+-\d+)?:\s+(.*)", line)
+        # fls formats: "r/r 66-128-3:" or "r/r * 102-128-1:" (deleted)
+        match = re.match(r"([rd/\-]+)\s*(\*)?\s*(\d+)(?:-\d+-\d+)?:\s+(.*)", line)
         if match:
             type_indicator = match.group(1)
-            inode = int(match.group(2))
-            remainder = match.group(3).strip()
+            deleted_marker = match.group(2)  # "*" if deleted, None otherwise
+            inode = int(match.group(3))
+            remainder = match.group(4).strip()
 
             # Determine file type
-            if type_indicator.startswith("d"):
+            if deleted_marker == "*":
+                file_type = "deleted"
+            elif type_indicator.startswith("d"):
                 file_type = "directory"
             elif type_indicator.startswith("r"):
                 file_type = "file"
-            elif "*" in type_indicator:
-                file_type = "deleted"
             else:
                 file_type = "other"
 
