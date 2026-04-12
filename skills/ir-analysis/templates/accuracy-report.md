@@ -1,0 +1,150 @@
+# Accuracy Report: {{CASE_ID}}
+
+**Date**: {{REPORT_DATE}}
+**Examiner**: {{EXAMINER_NAME}}
+
+This accuracy report is an honest self-assessment of VALKYRIE's investigation accuracy. It documents what the agent got right, what it got wrong, and how its self-correction mechanisms performed. Transparency about limitations is more valuable than claiming perfection.
+
+---
+
+## Findings Summary
+
+| Metric | Count |
+|--------|-------|
+| Total findings produced | {{TOTAL_FINDINGS}} |
+| HIGH confidence | {{HIGH_CONFIDENCE}} |
+| MEDIUM confidence | {{MEDIUM_CONFIDENCE}} |
+| LOW confidence | {{LOW_CONFIDENCE}} |
+| Tier 1 (direct tool output) | {{TIER1_COUNT}} |
+| Tier 2 (cross-referenced) | {{TIER2_COUNT}} |
+| Tier 3 (analytical inference) | {{TIER3_COUNT}} |
+
+---
+
+## Self-Correction Performance
+
+### Corrections Applied
+
+| Metric | Count |
+|--------|-------|
+| Total issues detected | {{TOTAL_ISSUES}} |
+| HIGH severity issues | {{HIGH_ISSUES}} |
+| Auto-remediated | {{AUTO_REMEDIATED}} |
+| Findings removed | {{FINDINGS_REMOVED}} |
+| Confidence downgrades | {{CONFIDENCE_DOWNGRADES}} |
+
+### By Detection Layer
+
+| Layer | Checks Run | Issues Found | Corrected | Uncorrected |
+|-------|-----------|-------------|-----------|-------------|
+| Layer 1 (Artifact Existence) | {{L1_CHECKS}} | {{L1_ISSUES}} | {{L1_CORRECTED}} | {{L1_UNCORRECTED}} |
+| Layer 2 (Temporal Consistency) | {{L2_CHECKS}} | {{L2_ISSUES}} | {{L2_CORRECTED}} | {{L2_UNCORRECTED}} |
+| Layer 3 (Analytical Coherence) | {{L3_CHECKS}} | {{L3_ISSUES}} | {{L3_CORRECTED}} | {{L3_UNCORRECTED}} |
+
+### Issue Types Detected
+
+| Issue Type | Count | Severity | Layer |
+|-----------|-------|----------|-------|
+{{#ISSUE_TYPES}}
+| {{TYPE}} | {{COUNT}} | {{SEVERITY}} | {{LAYER}} |
+{{/ISSUE_TYPES}}
+
+---
+
+## Hallucination Assessment
+
+**Definition**: A hallucination is a finding that references an artifact, timestamp, process, or other forensic detail that does not exist in the evidence. Layer 1 (Artifact Existence) validation is specifically designed to detect these.
+
+| Metric | Value |
+|--------|-------|
+| Total findings checked | {{FINDINGS_CHECKED}} |
+| Hallucinated artifacts detected | {{HALLUCINATIONS_DETECTED}} |
+| Hallucination rate | {{HALLUCINATION_RATE}} |
+| Hallucinations corrected | {{HALLUCINATIONS_CORRECTED}} |
+| Hallucinations remaining | {{HALLUCINATIONS_REMAINING}} |
+
+### Hallucination Details
+
+{{#HALLUCINATIONS}}
+- **{{CORRECTION_ID}}**: {{DESCRIPTION}} (Layer {{LAYER}}, {{SEVERITY}})
+  - Original claim: {{ORIGINAL}}
+  - Actual evidence: {{CORRECTED}}
+  - Resolution: {{RESOLUTION}}
+{{/HALLUCINATIONS}}
+
+---
+
+## Evidence Integrity Statement
+
+### How Evidence Was Protected
+
+VALKYRIE uses a 5-layer architectural enforcement model to prevent evidence spoliation:
+
+1. **Typed MCP functions**: The MCP server exposes only read operations (mmls, fls, icat, vol, yara, strings). No write, delete, or network operations are available to the agent.
+2. **Denylist enforcement**: 48 destructive binaries (rm, dd, shred, wget, curl, ssh, etc.) are blocked at the subprocess level before execution. This is enforced in code, not via prompts.
+3. **shell=False**: All subprocess calls use `shell=False`, preventing shell injection attacks.
+4. **PreToolUse hook**: A Claude Code hook inspects every Bash command before execution and blocks writes to evidence directories.
+5. **Read-only mount**: Evidence directories are mounted read-only at the OS level.
+
+### What Happens When Protections Fail
+
+{{PROTECTION_FAILURE_ANALYSIS}}
+
+**Prompt-based guardrails**: The skill protocols instruct the agent not to modify evidence. If the model ignores these instructions:
+- Layer 1 (denylist) blocks destructive binaries regardless of prompts
+- Layer 2 (shell=False) prevents shell injection regardless of prompts
+- Layer 3 (PreToolUse hook) blocks writes to evidence directories regardless of prompts
+- Layer 4 (read-only mount) prevents writes at the OS level regardless of all other layers
+
+**Tested for bypass**: {{BYPASS_TEST_RESULTS}}
+
+### Evidence Hash Verification
+
+| # | Evidence File | SHA256 (Pre-Investigation) | SHA256 (Post-Investigation) | Match |
+|---|--------------|---------------------------|----------------------------|-------|
+{{#EVIDENCE_HASHES}}
+| {{NUM}} | {{FILE}} | {{PRE_HASH}} | {{POST_HASH}} | {{MATCH}} |
+{{/EVIDENCE_HASHES}}
+
+---
+
+## Known Limitations
+
+### Evidence Not Analyzed
+
+{{EVIDENCE_NOT_ANALYZED}}
+
+### Analysis Gaps
+
+{{ANALYSIS_GAPS}}
+
+### Potential False Positives
+
+{{FALSE_POSITIVES}}
+
+### Potential Missed Artifacts
+
+{{MISSED_ARTIFACTS}}
+
+---
+
+## Ground Truth Comparison (if available)
+
+{{#IF GROUND_TRUTH}}
+
+| Metric | Value |
+|--------|-------|
+| Ground truth items | {{GT_TOTAL}} |
+| True positives | {{TRUE_POSITIVES}} |
+| False positives | {{FALSE_POSITIVES_COUNT}} |
+| False negatives | {{FALSE_NEGATIVES}} |
+| Precision | {{PRECISION}} |
+| Recall | {{RECALL}} |
+| F1 Score | {{F1}} |
+
+{{/IF}}
+
+---
+
+*Accuracy report generated by VALKYRIE*
+*Case: {{CASE_ID}} | Date: {{REPORT_TIMESTAMP}}*

@@ -1,0 +1,36 @@
+{
+  "$schema": "VALKYRIE Correction Record Template v1.0",
+  "$description": "Structure for self-correction records. Each correction documents what was wrong, how it was detected, and what changed. Written to corrections/correction-NNN.json.",
+
+  "correction_id": "C-001",
+
+  "detection_layer": "1 = artifact existence | 2 = temporal consistency | 3 = analytical coherence",
+
+  "issue_type": "hallucinated_artifact | wrong_pid | wrong_offset | temporal_impossibility | timezone_confusion | mac_inconsistency | kill_chain_gap | cross_technique_contradiction | wrong_mitre_mapping | confidence_miscalibration | missing_alternative_hypothesis | wrong_registry_path | hash_mismatch | log_entry_mismatch",
+
+  "severity": "HIGH | MEDIUM | LOW",
+
+  "description": "Human-readable description of what was wrong and why it matters",
+
+  "affected_finding": "F-003",
+
+  "original_value": "What the agent originally claimed (the incorrect assertion)",
+  "corrected_value": "What the corrected assertion is (or 'REMOVED' if the finding was deleted)",
+
+  "verification_method": "How the correction was verified — which MCP tool was re-invoked with what arguments",
+  "verification_tool": "analyze_memory",
+  "verification_args": {"dump_path": "/cases/CASE-001/evidence/memory.raw", "plugin": "pslist"},
+  "verification_output_hash": "SHA256 hash of the verification tool output",
+
+  "impact": {
+    "finding_removed": false,
+    "confidence_changed": false,
+    "confidence_before": "HIGH",
+    "confidence_after": "MEDIUM",
+    "tier_changed": false,
+    "narrative_affected": true,
+    "narrative_change": "Brief description of how the attack narrative changed"
+  },
+
+  "timestamp": "2026-04-15T14:23:00Z"
+}

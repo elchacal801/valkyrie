@@ -1,0 +1,53 @@
+{
+  "$schema": "VALKYRIE Finding Template v1.0",
+  "$description": "Structure for individual investigation findings. Every finding must include a citation tracing it to a specific tool execution.",
+
+  "finding_id": "F-001",
+  "title": "Short descriptive title of the finding",
+  "description": "Detailed description of what was found, including specific artifact details (paths, offsets, timestamps, process names).",
+
+  "confidence": "HIGH | MEDIUM | LOW",
+  "evidence_tier": "1 = direct tool output | 2 = cross-referenced | 3 = inference",
+
+  "supporting_tools": [
+    "volatility3.pslist",
+    "extract_mft"
+  ],
+
+  "citations": [
+    "[TOOL: volatility3.pslist, evidence: memory.raw, PID: 4832, ImageFileName: svchost.exe]",
+    "[CORROBORATED: extract_mft entry @ 2026-03-15T14:23:00Z + volatility3.pslist PID 4832]"
+  ],
+
+  "mitre_attack": {
+    "tactic": "Persistence",
+    "technique": "Boot or Logon Autostart Execution",
+    "technique_id": "T1547",
+    "sub_technique": "Registry Run Keys / Startup Folder",
+    "sub_technique_id": "T1547.001"
+  },
+
+  "timeline_position": "2026-03-15T14:23:00Z",
+  "timeline_description": "Where this finding falls in the attack narrative",
+
+  "artifacts": [
+    {
+      "type": "file | process | registry_key | network_connection | log_entry",
+      "path": "C:\\Windows\\Temp\\malware.exe",
+      "details": "Additional artifact-specific details"
+    }
+  ],
+
+  "corrections_applied": [
+    {
+      "correction_id": "C-001",
+      "original_value": "What was originally reported",
+      "corrected_value": "What it was corrected to",
+      "layer": 1
+    }
+  ],
+
+  "related_findings": ["F-002", "F-005"],
+
+  "analyst_notes": "Any additional analytical observations or caveats about this finding"
+}
