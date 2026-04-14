@@ -333,10 +333,18 @@ fi
 cp "$SETTINGS_FILE" "$GLOBAL_CLAUDE_DIR/settings.local.json"
 success "MCP settings installed globally at $GLOBAL_CLAUDE_DIR/settings.local.json"
 
-# --- Create default cases directory ---
-sudo mkdir -p /cases
-sudo chown "$(whoami):$(id -gn)" /cases
-success "Case directory created at /cases"
+# --- Create default cases directory (inside the project) ---
+mkdir -p "$INSTALL_DIR/cases"
+success "Case directory created at $INSTALL_DIR/cases"
+
+# Also create /cases as a symlink for backward compatibility
+if [ ! -e /cases ]; then
+    sudo ln -s "$INSTALL_DIR/cases" /cases
+    success "Symlinked /cases → $INSTALL_DIR/cases"
+elif [ ! -L /cases ]; then
+    # /cases exists and is a real directory — leave it, just inform
+    info "/cases already exists as a directory. New cases will also be created at $INSTALL_DIR/cases"
+fi
 
 # ============================================================================
 header "Phase 4: Verification"

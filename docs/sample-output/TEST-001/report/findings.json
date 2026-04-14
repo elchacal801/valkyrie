@@ -1,0 +1,72 @@
+{
+  "case_id": "TEST-001",
+  "report_date": "2026-04-13",
+  "total_findings": 5,
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "title": "Cobalt Strike SMB Beacon via WMI Lateral Movement",
+      "description": "A Cobalt Strike SMB Beacon was deployed on BASE-WKSTN-05 via WMI remote execution. Three WMI-spawned PowerShell chains used encoded commands with gzip/base64 shellcode and Wow64 RunAs32 injection to establish a reflective DLL loader communicating over named pipe \\\\.\\ pipe\\diagsvc-22.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "severity": "CRITICAL",
+      "mitre_attack": ["T1047", "T1059.001", "T1055.001", "T1027", "T1071.002"],
+      "iocs": ["\\\\.\\ pipe\\diagsvc-22", "powershell.exe -nop -w hidden -encodedcommand", "start-job -RunAs32 -Argument $DoIt"],
+      "affected_systems": ["BASE-WKSTN-05 (172.16.7.15)"],
+      "timeline": "2018-08-31T01:14:44Z — 2018-09-06T19:51:09Z",
+      "citations": ["C-001", "C-004"]
+    },
+    {
+      "finding_id": "F-002",
+      "title": "Post-Exploitation via Rundll32 Injection",
+      "description": "PowerShell PID 1332 spawned 5 rundll32.exe instances for DLL injection between 01:31 and 21:07 on Aug 31, 2018. All instances exited after brief execution, consistent with code injection or task execution via proxy binary.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "severity": "HIGH",
+      "mitre_attack": ["T1218.011", "T1059.001"],
+      "iocs": [],
+      "affected_systems": ["BASE-WKSTN-05"],
+      "timeline": "2018-08-31T01:31:44Z — 2018-08-31T21:07:28Z",
+      "citations": ["C-001"]
+    },
+    {
+      "finding_id": "F-003",
+      "title": "Persistent Orphaned Rundll32 Beacon",
+      "description": "Rundll32.exe PID 7100 ran for 6+ days with parent PID 7148 absent from the process list. 5 threads and 337 handles indicate active execution, likely a persistent Cobalt Strike beacon.",
+      "confidence": "MEDIUM",
+      "evidence_tier": 1,
+      "severity": "HIGH",
+      "mitre_attack": ["T1055", "T1218.011"],
+      "iocs": [],
+      "affected_systems": ["BASE-WKSTN-05"],
+      "timeline": "2018-08-31T18:43:50Z — 2018-09-06T19:51:09Z (still running)",
+      "citations": ["C-001"]
+    },
+    {
+      "finding_id": "F-004",
+      "title": "AV and Monitoring Evasion",
+      "description": "The attack succeeded despite McAfee Endpoint Security (8 processes) and Sysmon64 with Cobalt Strike detection rules being active. Reflective injection and in-memory execution bypassed signature-based detection.",
+      "confidence": "MEDIUM",
+      "evidence_tier": 3,
+      "severity": "MEDIUM",
+      "mitre_attack": ["T1562.001"],
+      "iocs": [],
+      "affected_systems": ["BASE-WKSTN-05"],
+      "timeline": "2018-08-31T01:14:44Z",
+      "citations": ["C-001", "C-004"]
+    },
+    {
+      "finding_id": "HT-001",
+      "title": "ACH: Targeted APT Most Plausible",
+      "description": "Analysis of Competing Hypotheses evaluated 5 explanations against 7 evidence items. Targeted APT intrusion (H1) had 0 inconsistencies. Commodity malware (3), insider threat (4), and legitimate activity (6) were eliminated. Red team (1 inconsistency) was eliminated by scenario context.",
+      "confidence": "HIGH",
+      "evidence_tier": 3,
+      "severity": "N/A",
+      "mitre_attack": [],
+      "iocs": [],
+      "affected_systems": ["BASE-WKSTN-05"],
+      "timeline": "N/A",
+      "citations": ["C-007"]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "case_id": "TEST-001",
+  "timestamp": "2026-04-13T05:32:00Z",
+  "evidence_summary": {
+    "os": "Windows 7 SP1 x64 (NT 6.1 build 6146)",
+    "hostname": "base-wkstn-05",
+    "ip_address": "172.16.7.15",
+    "system_time_at_capture": "2018-09-06T19:51:09Z",
+    "system_boot": "2018-08-30T05:14:12Z",
+    "uptime_days": 7.6,
+    "total_processes": 86,
+    "active_user_session": 5,
+    "antivirus": "McAfee (mfemms, mfefire, mcshield, masvc, VsTskMgr) — running",
+    "monitoring": "Sysmon64 (PID 1892) — running"
+  },
+  "iocs_found": [
+    {
+      "type": "suspicious_process",
+      "detail": "subject_srv.ex (PID 3548) — unknown binary running as service, listening on TCP 3262, started 2018-09-06 19:37:40 UTC (14 min before capture). 32-bit. Receiving connection from 172.16.5.50.",
+      "severity": "HIGH",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 3548, PPID: 652]"
+    },
+    {
+      "type": "suspicious_execution_chain",
+      "detail": "WmiPrvSE.exe (PID 2676) spawned multiple 64-bit powershell.exe instances (PIDs 4328, 4064, 3920) which spawned 32-bit powershell.exe children (PIDs 1124, 4072, 1332). Classic WMI lateral movement pattern. All started 2018-08-31 01:14-01:31 UTC.",
+      "severity": "HIGH",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PIDs: 2676→4328→1124, 2676→4064→4072, 2676→3920→1332]"
+    },
+    {
+      "type": "suspicious_execution_chain",
+      "detail": "powershell.exe (PID 1332) spawned 5 rundll32.exe instances (PIDs 5300, 5056, 4240, 1972, 3720) between 2018-08-31 01:31-21:07 UTC. All exited. Consistent with DLL injection / Cobalt Strike staging.",
+      "severity": "HIGH",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PPID: 1332, child PIDs: 5300, 5056, 4240, 1972, 3720]"
+    },
+    {
+      "type": "orphan_process",
+      "detail": "rundll32.exe (PID 7100, PPID 7148) — parent PID not found in process list. Started 2018-08-31 18:43:50 UTC. Still running with 5 threads, 337 handles. Session 0.",
+      "severity": "MEDIUM",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 7100, PPID: 7148 (not found)]"
+    },
+    {
+      "type": "network_c2",
+      "detail": "Multiple TCP connections to 172.16.4.10:8080 from 172.16.7.15 (ports 57160, 57161, 54367, 53233, 55697). States: CLOSED, CLOSE_WAIT. Likely C2 or proxy.",
+      "severity": "HIGH",
+      "citation": "[TOOL: volatility3.netscan, evidence: base-wkstn-05-memory.img, ForeignAddr: 172.16.4.10:8080]"
+    },
+    {
+      "type": "network_lateral",
+      "detail": "ESTABLISHED TCP connection from 172.16.5.50:56012 → 172.16.7.15:3262 (subject_srv.ex listener). Indicates active lateral movement or C2 relay.",
+      "severity": "HIGH",
+      "citation": "[TOOL: volatility3.netscan, evidence: base-wkstn-05-memory.img, LocalPort: 3262, ForeignAddr: 172.16.5.50]"
+    },
+    {
+      "type": "network_suspicious",
+      "detail": "ESTABLISHED TCP connection to 172.16.4.6:443. Could be legitimate HTTPS or encrypted C2.",
+      "severity": "LOW",
+      "citation": "[TOOL: volatility3.netscan, evidence: base-wkstn-05-memory.img, ForeignAddr: 172.16.4.6:443]"
+    },
+    {
+      "type": "network_smb",
+      "detail": "ESTABLISHED SMB connection from 172.16.6.11:59352 → 172.16.7.15:445. Active file sharing session.",
+      "severity": "LOW",
+      "citation": "[TOOL: volatility3.netscan, evidence: base-wkstn-05-memory.img, LocalPort: 445, ForeignAddr: 172.16.6.11]"
+    }
+  ],
+  "timeline_bounds": {
+    "earliest_suspicious": "2018-08-31T01:14:44Z",
+    "latest_suspicious": "2018-09-06T19:37:40Z",
+    "system_boot": "2018-08-30T05:14:12Z",
+    "memory_capture": "2018-09-06T19:51:09Z"
+  },
+  "anomalies": [
+    "WMI → PowerShell → rundll32 execution chain (APT lateral movement pattern)",
+    "Unknown service binary subject_srv.ex with active inbound connection",
+    "5 connections to 172.16.4.10:8080 (likely C2 proxy)",
+    "Orphaned rundll32.exe with missing parent PID",
+    "32-bit PowerShell spawned from 64-bit PowerShell (Wow64 cradle injection)",
+    "Multiple conhost.exe instances in Session 0 tied to PowerShell activity"
+  ],
+  "recommended_techniques": ["memory"],
+  "suspect_ips": ["172.16.4.10", "172.16.5.50", "172.16.4.6"],
+  "suspect_pids": [3548, 1332, 3920, 4064, 4072, 4328, 1124, 7100],
+  "suspect_binaries": ["subject_srv.ex", "powershell.exe", "rundll32.exe"]
+}

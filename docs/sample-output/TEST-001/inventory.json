@@ -1,0 +1,46 @@
+{
+  "case_id": "TEST-001",
+  "evidence_path": "/cases/TEST-001/evidence/",
+  "scan_timestamp": "2026-04-13T05:25:00Z",
+  "mount_read_only": false,
+  "acquisition_metadata": {
+    "tool": "dc3dd 7.2.641",
+    "source": "/mnt/nfury/base-wkstn-05/pmem/pmem",
+    "capture_start": "2018-09-06T19:51:09Z",
+    "capture_end": "2018-09-06T19:52:02Z",
+    "md5_at_acquisition": "bb6df5c0350d8014b718699f8c0c4fe0"
+  },
+  "files": [
+    {
+      "path": "/cases/TEST-001/evidence/base-wkstn-05-memory.img",
+      "name": "base-wkstn-05-memory.img",
+      "size_bytes": 3221225472,
+      "size_human": "3.0 GB",
+      "type": "memory_dump",
+      "format": "raw (physical memory via dc3dd)",
+      "sha256": "74ff679b25727d5fb7a8f70217d6fad965efd806260b7d224f0b38bd1c436115",
+      "md5_verified": true
+    },
+    {
+      "path": "/cases/TEST-001/evidence/base-wkstn-05-memory.md5",
+      "name": "base-wkstn-05-memory.md5",
+      "size_bytes": 405,
+      "size_human": "405 B",
+      "type": "other",
+      "format": "dc3dd hash log",
+      "sha256": "N/A"
+    }
+  ],
+  "summary": {
+    "total_files": 2,
+    "total_size_bytes": 3221225877,
+    "total_size_human": "3.0 GB",
+    "evidence_types": ["memory_dump"],
+    "disk_images": 0,
+    "memory_dumps": 1,
+    "event_logs": 0,
+    "registry_hives": 0,
+    "network_captures": 0,
+    "other": 1
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "case_id": "SRL2015-XP",
+  "total_findings": 9,
+  "tier_2_findings": 4,
+  "findings": [
+    {"finding_id": "F-001", "title": "spinlock.exe — PyInstaller-packed RAT in system32 (5-source corroboration)", "confidence": "HIGH", "evidence_tier": 2, "severity": "CRITICAL", "mitre": ["T1059.006", "T1036.005"], "sha256": "6eef2381040cd38ce5974ef954121e136bd93ec4039d49925438c92ef5f3dead", "sources": ["psscan", "fls", "prefetch", "AppCompatCache", "FLOSS"], "citation": "[CORROBORATED: psscan PIDs 3648/12244 + fls inode 7793 + Prefetch SPINLOCK.EXE-1F9810CF.pf + AppCompatCache + FLOSS PyInstaller markers]"},
+    {"finding_id": "F-002", "title": "Gh0st RAT in memory", "confidence": "HIGH", "evidence_tier": 1, "severity": "CRITICAL", "mitre": ["T1219"], "citation": "[TOOL: strings, evidence: xp-tdungan-memory-raw.001, pattern: 'Gh0st RAT']"},
+    {"finding_id": "F-003", "title": "Zeus rootkit — inline hooks in ntdll.dll (NtCreateThread, NtQueryDirectoryFile)", "confidence": "HIGH", "evidence_tier": 2, "severity": "CRITICAL", "mitre": ["T1014", "T1055"], "sources": ["volatility apihooks", "strings"], "citation": "[CORROBORATED: precooked volatility apihooks (JMP 0x7e3b47 in services.exe) + strings (Gh0st/backdoor/keylogger refs)]"},
+    {"finding_id": "F-004", "title": "Attacker account 'vibranium' — spinlock manifest in user Temp", "confidence": "HIGH", "evidence_tier": 2, "severity": "HIGH", "mitre": ["T1136.001"], "sources": ["fls", "plaso timeline", "psscan"], "citation": "[CORROBORATED: fls vibranium profile + timeline _MEI122362/spinlock.exe.manifest + psscan spinlock under vibranium session]"},
+    {"finding_id": "F-005", "title": "pe.exe secondary tool spawned by spinlock→cmd chain", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1059.003"], "citation": "[TOOL: psscan, PIDs: 3648→7416→10384, pe.exe @ Apr 6 13:43]"},
+    {"finding_id": "F-006", "title": "logon.scr trojanized screensaver (3-source corroboration)", "confidence": "MEDIUM", "evidence_tier": 2, "severity": "HIGH", "mitre": ["T1546.002"], "sources": ["psscan", "fls", "prefetch"], "citation": "[CORROBORATED: psscan PID 1324 + fls logon.scr (3 locations) + Prefetch LOGON.SCR-151EFAEA.pf]"},
+    {"finding_id": "F-007", "title": "Admin account creation via net user/localgroup", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1136.001"], "citation": "[TOOL: strings, evidence: xp-tdungan-memory-raw.001, pattern: 'net user /add && net localgroup Administrators']"},
+    {"finding_id": "F-008", "title": "Keylogger references in memory (Keylog-CN, Keylog-SC, KEYLOGGER)", "confidence": "MEDIUM", "evidence_tier": 1, "severity": "MEDIUM", "mitre": ["T1056.001"], "citation": "[TOOL: strings, evidence: xp-tdungan-memory-raw.001, multiple keylogger string variants]"},
+    {"finding_id": "F-009", "title": "McAfee AV active but bypassed", "confidence": "MEDIUM", "evidence_tier": 3, "severity": "MEDIUM", "mitre": ["T1562.001"], "citation": "[INFERENCE: McAfee processes running (psscan: mfevtps, mcshield, mfefire) yet Gh0st+Zeus+spinlock all active]"}
+  ]
+}

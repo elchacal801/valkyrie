@@ -22,9 +22,10 @@ env/
 .DS_Store
 Thumbs.db
 
-# Case data (never commit evidence or investigation output)
+# Case data (never commit raw evidence or live investigation output)
 /cases/
 /case-output/
+# Sample output in docs/ IS committed (docs/sample-output/)
 
 # Temporary scripts
 run_vol.py

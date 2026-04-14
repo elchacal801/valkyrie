@@ -26,6 +26,7 @@
   <a href="#results">Results</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#self-correction-in-action">Self-Correction</a> ·
+  <a href="docs/sample-output/TEST-001/report/investigation-report.md">Sample Report</a> ·
   <a href="docs/accuracy-report.md">Accuracy Report</a>
 </p>
 

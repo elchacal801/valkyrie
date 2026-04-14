@@ -1,0 +1,117 @@
+{
+  "case_id": "TEST-001",
+  "timestamp": "2026-04-13T05:55:00Z",
+  "attack_narrative": "A threat actor with access to the shieldbase.lan domain leveraged WMI to remotely execute PowerShell on BASE-WKSTN-05 (172.16.7.15) beginning 2018-08-31 01:14:44 UTC. The attacker deployed a Cobalt Strike SMB Beacon via a three-stage process: (1) WmiPrvSE.exe spawned a 64-bit PowerShell session, (2) the 64-bit PS decoded and decompressed a gzip-wrapped shellcode payload from a base64-encoded command, (3) on detecting a 64-bit OS, it re-launched as a 32-bit process via start-job -RunAs32 to execute the x86 Cobalt Strike reflective DLL loader. This pattern was repeated three times between 01:14 and 01:31 UTC. The beacon communicated via SMB named pipe \\\\.\\ pipe\\diagsvc-22, indicating this workstation was part of a lateral movement chain — not the initial point of compromise. Post-exploitation included 5 rundll32.exe injections from PID 1332 between 01:31 and 21:07 on Aug 31. An orphaned rundll32.exe (PID 7100) persisted until memory capture on Sep 6. The attack succeeded despite active McAfee AV and Sysmon with Cobalt Strike detection rules.",
+  "kill_chain": [
+    {
+      "phase": "Initial Access",
+      "detail": "Not directly observed on this host. WMI execution implies the attacker already had domain credentials and network access from a previously compromised system.",
+      "mitre": "T1078 Valid Accounts (inferred)",
+      "evidence_tier": 3,
+      "timeline": "Before 2018-08-31T01:14:44Z"
+    },
+    {
+      "phase": "Execution",
+      "detail": "WMI remote execution (WmiPrvSE.exe → powershell.exe) delivered encoded Cobalt Strike stager. Three execution chains created between 01:14-01:31 UTC.",
+      "mitre": "T1047 WMI, T1059.001 PowerShell",
+      "evidence_tier": 1,
+      "timeline": "2018-08-31T01:14:44Z — 2018-08-31T01:31:25Z"
+    },
+    {
+      "phase": "Defense Evasion",
+      "detail": "Encoded PowerShell (-nop -w hidden -encodedcommand), Wow64 process re-launch, reflective DLL injection via VirtualAlloc, rundll32.exe as injection host. Evaded McAfee AV and Sysmon.",
+      "mitre": "T1027 Obfuscated Files, T1055.001 DLL Injection, T1218.011 Rundll32",
+      "evidence_tier": 1,
+      "timeline": "2018-08-31T01:14:44Z — ongoing"
+    },
+    {
+      "phase": "Command and Control",
+      "detail": "Cobalt Strike SMB Beacon over named pipe \\\\.\\ pipe\\diagsvc-22. Lateral movement C2 channel — not direct external comms from this host.",
+      "mitre": "T1071.002 SMB, T1572 Protocol Tunneling (named pipe)",
+      "evidence_tier": 1,
+      "timeline": "2018-08-31T01:14:44Z — 2018-09-06T19:51:09Z (capture)"
+    },
+    {
+      "phase": "Lateral Movement",
+      "detail": "This workstation is a lateral movement target, accessed via WMI from another domain-joined system. The SMB Beacon pipe suggests it may also serve as a pivot to additional hosts.",
+      "mitre": "T1021.006 WMI, T1570 Lateral Tool Transfer",
+      "evidence_tier": 1,
+      "timeline": "2018-08-31T01:14:44Z"
+    },
+    {
+      "phase": "Persistence",
+      "detail": "Multiple long-running PowerShell processes in Session 0. Orphaned rundll32.exe (PID 7100) survived for 6+ days. No registry or service-based persistence observed in memory (may exist on disk).",
+      "mitre": "T1055 Process Injection (memory-resident)",
+      "evidence_tier": 1,
+      "timeline": "2018-08-31T01:14:44Z — 2018-09-06T19:51:09Z"
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "description": "Cobalt Strike SMB Beacon deployed via WMI lateral movement with Wow64 PowerShell injection cradle. Named pipe C2: diagsvc-22.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "supporting_tools": ["volatility3.psscan", "strings extraction"],
+      "citations": [
+        "[TOOL: volatility3.psscan, PIDs: 2676→4328→1124, 2676→4064→4072, 2676→3920→1332]",
+        "[TOOL: strings, patterns: VirtualAlloc+diagsvc-22+var_code+start-job -RunAs32]"
+      ],
+      "mitre_attack": {"tactic": "Multiple", "techniques": ["T1047", "T1059.001", "T1055.001", "T1071.002"]},
+      "timeline_position": "2018-08-31T01:14:44Z"
+    },
+    {
+      "finding_id": "F-002",
+      "description": "Post-exploitation via rundll32 injection. PID 1332 spawned 5 rundll32.exe instances for additional code execution.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "supporting_tools": ["volatility3.psscan"],
+      "citations": ["[TOOL: volatility3.psscan, PPID: 1332, children: 5300, 5056, 4240, 1972, 3720]"],
+      "mitre_attack": {"tactic": "Defense Evasion", "technique": "T1218.011"},
+      "timeline_position": "2018-08-31T01:31:44Z"
+    },
+    {
+      "finding_id": "F-003",
+      "description": "Orphaned rundll32.exe (PID 7100) persisted 6+ days with missing parent — likely long-running beacon.",
+      "confidence": "MEDIUM",
+      "evidence_tier": 1,
+      "supporting_tools": ["volatility3.psscan"],
+      "citations": ["[TOOL: volatility3.psscan, PID: 7100, PPID: 7148 (absent)]"],
+      "mitre_attack": {"tactic": "Persistence", "technique": "T1055"},
+      "timeline_position": "2018-08-31T18:43:50Z"
+    },
+    {
+      "finding_id": "F-004",
+      "description": "Attack evaded active McAfee AV and Sysmon. Reflective injection and in-memory execution bypassed signature detection.",
+      "confidence": "MEDIUM",
+      "evidence_tier": 3,
+      "supporting_tools": ["volatility3.psscan", "strings"],
+      "citations": ["[INFERENCE: AV processes running per psscan, Sysmon config with CS rules per strings, attack still successful]"],
+      "mitre_attack": {"tactic": "Defense Evasion", "technique": "T1562"},
+      "timeline_position": "2018-08-31T01:14:44Z"
+    },
+    {
+      "finding_id": "HT-001",
+      "description": "ACH analysis: Targeted APT intrusion is most plausible (0 inconsistencies). Commodity malware, insider threat, and legitimate activity eliminated.",
+      "confidence": "HIGH",
+      "evidence_tier": 3,
+      "supporting_tools": ["ACH methodology"],
+      "citations": ["[INFERENCE: ACH — H1(0 inconsistencies) vs H2(3), H3(4), H4(6), H5(1)]"],
+      "mitre_attack": {"tactic": "N/A", "technique": "N/A"},
+      "timeline_position": "N/A"
+    }
+  ],
+  "competing_hypotheses": {
+    "leading": "H1 — Targeted APT intrusion",
+    "runner_up": "H5 — Red team (eliminated by scenario context, not forensic evidence)",
+    "eliminated": ["H2 — Opportunistic malware", "H3 — Insider threat", "H4 — Legitimate activity"]
+  },
+  "unresolved_questions": [
+    "What was the initial access vector? (Requires disk/log analysis from other hosts)",
+    "Which host executed the WMI command against base-wkstn-05? (Requires DC event logs)",
+    "What specific actions did the attacker take via rundll32 injections? (Requires disk forensics or Sysmon logs)",
+    "Was data exfiltrated from this workstation? (Memory alone cannot confirm)",
+    "Are other workstations in the shieldbase.lan domain also compromised? (Requires network-wide analysis)",
+    "What credentials did the attacker use? (LSASS dump or DC logs needed)"
+  ]
+}

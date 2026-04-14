@@ -1,0 +1,54 @@
+{
+  "case_id": "TEST-001",
+  "timestamp": "2026-04-13T06:00:00Z",
+  "layers_executed": [1, 2, 3],
+  "layer_1": {
+    "name": "Artifact Existence Validation",
+    "checks_run": 14,
+    "issues_found": 0,
+    "high_severity": 0,
+    "corrections_applied": 0,
+    "details": [
+      "All 14 cited PIDs verified against volatility3.psscan output",
+      "All process names match between findings and psscan",
+      "Named pipe diagsvc-22 verified via raw strings extraction (not hallucinated)",
+      "Memory offsets not independently verifiable (pslist failed, psscan offsets used)",
+      "Note: file paths (C:\\windows\\subject_srv.exe) verified via strings, not disk"
+    ]
+  },
+  "layer_2": {
+    "name": "Temporal Consistency Validation",
+    "checks_run": 11,
+    "issues_found": 0,
+    "high_severity": 0,
+    "corrections_applied": 0,
+    "gaps_documented": 2,
+    "details": [
+      "All 11 timeline events in correct chronological order",
+      "No cause-effect violations detected",
+      "All timestamps in UTC (consistent with Volatility output)",
+      "GAP 1: 96.7 hours between last rundll32 activity (Aug 31 21:07) and RDP user session (Sep 4 21:51). Explanation: attacker maintained persistent beacon via long-running PowerShell/rundll32 processes; next visible activity was when a user logged in via RDP on Sep 4.",
+      "GAP 2: 45.8 hours between user RDP session (Sep 4 21:51) and F-Response install (Sep 6 19:37). Explanation: F-Response was deployed by IR team during investigation, unrelated to attack timeline."
+    ]
+  },
+  "layer_3": {
+    "name": "Analytical Coherence Validation",
+    "checks_run": 6,
+    "issues_found": 0,
+    "high_severity": 0,
+    "corrections_applied": 0,
+    "details": [
+      "Kill chain: 6 phases mapped (Initial Access inferred, all others Tier 1). No impossible gaps.",
+      "MITRE ATT&CK mappings verified: T1047 (WMI), T1059.001 (PS), T1055.001 (DLL Injection), T1071.002 (SMB), T1218.011 (Rundll32) — all consistent with observed behavior.",
+      "Confidence calibration: Tier 1 findings at HIGH, Tier 3 inferences at MEDIUM or HIGH-with-justification. HT-001 (ACH conclusion) is Tier 3/HIGH — justified by zero-inconsistency ACH result.",
+      "Hypothesis testing: 5 hypotheses evaluated including null (H4). H4 eliminated with 6 inconsistencies. H5 (Red Team) genuinely considered.",
+      "Senior analyst challenges: 4 challenges addressed — subject_srv.exe reclassified as F-Response, proxy reclassified as corporate PAC, PowerShell ruled out as admin via shellcode evidence, red team scenario evaluated via ACH.",
+      "Self-corrections during analysis: 2 reclassifications applied (subject_srv.exe, 172.16.4.10:8080) — caught during Phase 3, not Phase 5."
+    ]
+  },
+  "total_corrections": 0,
+  "findings_removed": 0,
+  "confidence_downgrades": 0,
+  "reclassifications_during_analysis": 2,
+  "overall_assessment": "Investigation validated across all 3 layers with 0 post-hoc corrections needed. All PIDs verified against psscan. Timeline is chronologically consistent with 2 explained gaps. Kill chain and MITRE mappings are coherent. Two early reclassifications (subject_srv.exe as F-Response, 172.16.4.10 as corporate proxy) demonstrate in-flight self-correction during Phase 3, before formal validation."
+}

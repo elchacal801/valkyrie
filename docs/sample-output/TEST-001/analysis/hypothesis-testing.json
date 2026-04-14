@@ -1,0 +1,181 @@
+{
+  "technique": "hypothesis-testing",
+  "case_id": "TEST-001",
+  "timestamp": "2026-04-13T05:50:00Z",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "Targeted intrusion (APT)",
+      "description": "A sophisticated threat actor deliberately compromised this workstation as part of a targeted campaign against the shieldbase.lan enterprise network.",
+      "inconsistencies": 0,
+      "key_consistent_evidence": ["E-001", "E-002", "E-003", "E-004", "E-005", "E-006", "E-007"],
+      "key_inconsistent_evidence": [],
+      "assessment": "MOST PLAUSIBLE — zero inconsistencies, all evidence consistent with targeted APT lateral movement"
+    },
+    {
+      "id": "H2",
+      "name": "Opportunistic malware",
+      "description": "The system was infected by commodity malware via phishing or exploit kit.",
+      "inconsistencies": 3,
+      "key_consistent_evidence": ["E-003"],
+      "key_inconsistent_evidence": ["E-001", "E-002", "E-005"],
+      "assessment": "ELIMINATED — WMI lateral movement (E-001), multiple staged execution chains (E-002), and SMB named pipe C2 (E-005) are inconsistent with automated commodity malware"
+    },
+    {
+      "id": "H3",
+      "name": "Insider threat",
+      "description": "An authorized user misused access to deploy tools on this workstation.",
+      "inconsistencies": 4,
+      "key_consistent_evidence": [],
+      "key_inconsistent_evidence": ["E-001", "E-002", "E-003", "E-005"],
+      "assessment": "ELIMINATED — WMI remote execution from another host, shellcode injection, and named pipe C2 are inconsistent with insider activity patterns"
+    },
+    {
+      "id": "H4",
+      "name": "Legitimate activity (null hypothesis)",
+      "description": "All observed artifacts are from normal administration, software updates, or authorized maintenance.",
+      "inconsistencies": 6,
+      "key_consistent_evidence": [],
+      "key_inconsistent_evidence": ["E-001", "E-002", "E-003", "E-004", "E-005", "E-006"],
+      "assessment": "ELIMINATED — encoded PowerShell stagers, reflective DLL injection, and named pipe C2 are not legitimate administration activities"
+    },
+    {
+      "id": "H5",
+      "name": "Red team / penetration test",
+      "description": "The observed Cobalt Strike activity is from an authorized security assessment.",
+      "inconsistencies": 1,
+      "key_consistent_evidence": ["E-001", "E-002", "E-003", "E-004", "E-005"],
+      "key_inconsistent_evidence": ["E-007"],
+      "assessment": "POSSIBLE but less likely — TTPs are consistent with red team tooling (Cobalt Strike is common in pentests). However, the SRL scenario context (E-007) establishes this as a compromised network exercise, not a red team engagement. If this were a real investigation, H5 would require verification with the security team."
+    }
+  ],
+  "evidence_items": [
+    {
+      "id": "E-001",
+      "description": "WMI lateral movement: WmiPrvSE.exe (PID 2676) spawned 3 PowerShell instances in Session 0, indicating remote execution from another host",
+      "source_technique": "memory-analysis",
+      "evidence_tier": 1,
+      "ratings": {"H1": "C", "H2": "I", "H3": "I", "H4": "I", "H5": "C"},
+      "diagnostic_value": "HIGH — discriminates APT/RedTeam from malware/insider/legitimate"
+    },
+    {
+      "id": "E-002",
+      "description": "Multiple staged execution chains: 64-bit PS → 32-bit PS (Wow64 cradle) → rundll32, repeated 3 times between 01:14-01:31 UTC on Aug 31",
+      "source_technique": "memory-analysis",
+      "evidence_tier": 1,
+      "ratings": {"H1": "C", "H2": "I", "H3": "I", "H4": "I", "H5": "C"},
+      "diagnostic_value": "HIGH — methodical staging with Wow64 bypass indicates sophisticated operator, not automated malware"
+    },
+    {
+      "id": "E-003",
+      "description": "Encoded PowerShell stager: -nop -w hidden -encodedcommand with MemoryStream/gzip/base64 payload",
+      "source_technique": "memory-analysis",
+      "evidence_tier": 1,
+      "ratings": {"H1": "C", "H2": "C", "H3": "I", "H4": "I", "H5": "C"},
+      "diagnostic_value": "MEDIUM — consistent with both APT and commodity malware using PowerShell Empire/Metasploit"
+    },
+    {
+      "id": "E-004",
+      "description": "Reflective DLL injection via VirtualAlloc(0x3000, 0x40) + GetDelegateForFunctionPointer shellcode execution",
+      "source_technique": "memory-analysis",
+      "evidence_tier": 1,
+      "ratings": {"H1": "C", "H2": "N", "H3": "N", "H4": "I", "H5": "C"},
+      "diagnostic_value": "MEDIUM — common in both APT tools and frameworks, but inconsistent with legitimate activity"
+    },
+    {
+      "id": "E-005",
+      "description": "SMB Beacon C2 via named pipe \\\\.\\ pipe\\diagsvc-22 — Cobalt Strike signature",
+      "source_technique": "memory-analysis",
+      "evidence_tier": 1,
+      "ratings": {"H1": "C", "H2": "I", "H3": "I", "H4": "I", "H5": "C"},
+      "diagnostic_value": "HIGHEST — SMB named pipe C2 is signature Cobalt Strike. Eliminates commodity malware and insider threat. Consistent with APT or red team."
+    },
+    {
+      "id": "E-006",
+      "description": "Attacker evaded McAfee AV + Sysmon with Cobalt Strike detection rules — attack succeeded despite active defenses",
+      "source_technique": "memory-analysis",
+      "evidence_tier": 3,
+      "ratings": {"H1": "C", "H2": "N", "H3": "N", "H4": "I", "H5": "C"},
+      "diagnostic_value": "LOW — consistent with multiple hypotheses"
+    },
+    {
+      "id": "E-007",
+      "description": "Scenario context: SRL-2018 Compromised Enterprise Network exercise — this is known to be a compromised environment, not a red team exercise",
+      "source_technique": "case-context",
+      "evidence_tier": 3,
+      "ratings": {"H1": "C", "H2": "N", "H3": "N", "H4": "I", "H5": "I"},
+      "diagnostic_value": "HIGH for H5 discrimination — but this is external context, not forensic evidence"
+    }
+  ],
+  "diagnosticity_matrix": {
+    "headers": ["Evidence", "H1:APT", "H2:Malware", "H3:Insider", "H4:Legit", "H5:RedTeam"],
+    "rows": [
+      ["E-001 WMI lateral movement",    "C", "I", "I", "I", "C"],
+      ["E-002 Staged Wow64 execution",  "C", "I", "I", "I", "C"],
+      ["E-003 Encoded PS stager",       "C", "C", "I", "I", "C"],
+      ["E-004 Reflective DLL injection", "C", "N", "N", "I", "C"],
+      ["E-005 SMB Beacon named pipe",   "C", "I", "I", "I", "C"],
+      ["E-006 AV evasion success",      "C", "N", "N", "I", "C"],
+      ["E-007 Scenario context",        "C", "N", "N", "I", "I"]
+    ]
+  },
+  "zero_diagnostic_items": [
+    "None — all evidence items are inconsistent with at least one hypothesis"
+  ],
+  "leading_hypothesis": {
+    "id": "H1",
+    "name": "Targeted intrusion (APT)",
+    "confidence": "HIGH",
+    "inconsistency_count": 0,
+    "rationale": "Zero inconsistencies across 7 evidence items. All observed TTPs — WMI lateral movement, staged PowerShell Wow64 injection, Cobalt Strike SMB Beacon — are hallmarks of targeted APT operations. H5 (Red Team) is the only close competitor with 1 inconsistency, but scenario context eliminates it."
+  },
+  "eliminated_hypotheses": [
+    {
+      "id": "H2",
+      "name": "Opportunistic malware",
+      "reason": "3 inconsistencies: WMI lateral movement requires prior network access (not initial infection vector), staged Wow64 chains are operator-driven not automated, SMB named pipe C2 is not used by commodity malware families."
+    },
+    {
+      "id": "H3",
+      "name": "Insider threat",
+      "reason": "4 inconsistencies: WMI remote execution implies external origin, shellcode injection is not insider behavior, encoded commands suggest stealth (insiders use legitimate tools), named pipe C2 framework is attacker infrastructure."
+    },
+    {
+      "id": "H4",
+      "name": "Legitimate activity",
+      "reason": "6 inconsistencies: No legitimate administrative purpose for encoded PowerShell stagers, VirtualAlloc shellcode, Cobalt Strike named pipes, or rundll32 injection chains."
+    }
+  ],
+  "sensitivity_analysis": {
+    "critical_evidence": "E-005 (SMB Beacon named pipe diagsvc-22)",
+    "impact_if_wrong": "If the named pipe is a legitimate service (e.g., diagnostic service), H1 loses its strongest Cobalt Strike indicator. The attack would still be confirmed by E-001/E-002/E-003/E-004, but attribution to Cobalt Strike specifically would weaken.",
+    "linchpin_assumptions": [
+      "The named pipe diagsvc-22 is a C2 channel, not a legitimate Windows service pipe",
+      "The WMI execution originated from a remote host (not local task scheduler)",
+      "The shellcode in memory is the actual executed payload, not residual from a scan or test"
+    ]
+  },
+  "future_indicators": {
+    "confirm": [
+      "Named pipe diagsvc-22 found on other workstations in the network → confirms lateral pivot chain",
+      "Cobalt Strike team server found at an internal or external IP",
+      "Additional memory dumps from other hosts show same Wow64 stager pattern",
+      "Sysmon logs on DC show WMI event correlating to Aug 31 01:14 UTC",
+      "Disk artifacts: PowerShell script block logs, Prefetch for powershell.exe timestamps"
+    ],
+    "refute": [
+      "Red team engagement documented for Aug 31 - Sep 6 2018 timeframe",
+      "diagsvc-22 is a legitimate named pipe from installed diagnostic software",
+      "WMI execution was scheduled by SCCM or other management tool (check __EventFilter in WMI repository)"
+    ]
+  },
+  "findings": [
+    {
+      "finding_id": "HT-001",
+      "description": "Targeted APT intrusion is the most plausible explanation. Zero inconsistencies across 7 evidence items. The combination of WMI lateral movement, staged Wow64 PowerShell injection, reflective DLL loading, and Cobalt Strike SMB Beacon C2 via named pipe diagsvc-22 is a textbook APT post-exploitation pattern. Commodity malware (H2) eliminated by the sophistication and operator-driven nature. Insider threat (H3) eliminated by remote execution indicators. Legitimate activity (H4) eliminated by 6 inconsistencies.",
+      "confidence": "HIGH",
+      "evidence_tier": 3,
+      "citation": "[INFERENCE: ACH analysis — H1 has 0 inconsistencies vs H2(3), H3(4), H4(6), H5(1). H5 eliminated by scenario context. All ratings traceable to volatility3.psscan and strings extraction findings. Confidence: HIGH]"
+    }
+  ]
+}

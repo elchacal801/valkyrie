@@ -1,0 +1,212 @@
+{
+  "technique": "memory-analysis",
+  "case_id": "TEST-001",
+  "timestamp": "2026-04-13T05:45:00Z",
+  "dump_path": "/cases/TEST-001/evidence/base-wkstn-05-memory.img",
+  "os_info": {
+    "version": "Windows 7 SP1 x64 (NT 6.1 build 6146)",
+    "hostname": "BASE-WKSTN-05.shieldbase.lan",
+    "domain": "shieldbase.lan",
+    "ip": "172.16.7.15",
+    "system_time": "2018-09-06T19:51:09Z"
+  },
+  "process_summary": {
+    "total_processes": 86,
+    "suspicious_processes": 7,
+    "orphan_processes": 1,
+    "note": "pslist/cmdline/dlllist/malfind plugins failed (ISF symbol mismatch). Used psscan (pool scanning) and raw string extraction."
+  },
+  "attack_chain": {
+    "tool": "Cobalt Strike (or Metasploit) with SMB Beacon",
+    "c2_channel": "Named pipe: \\\\.\\ pipe\\diagsvc-22",
+    "c2_type": "SMB Beacon (lateral movement pivot, not direct HTTP C2)",
+    "delivery": "WMI remote execution → PowerShell stager",
+    "injection": "Reflective DLL injection via VirtualAlloc + GetDelegateForFunctionPointer",
+    "architecture_bypass": "start-job -RunAs32 (Wow64 cradle for 32-bit shellcode on 64-bit OS)",
+    "persistence": "Multiple PowerShell processes kept alive in Session 0"
+  },
+  "suspicious_processes": [
+    {
+      "pid": 4328,
+      "ppid": 2676,
+      "name": "powershell.exe",
+      "wow64": false,
+      "creation_time": "2018-08-31T01:14:44Z",
+      "flags": ["spawned_by_wmiprvse", "session_0"],
+      "context": "First PowerShell stager. WmiPrvSE (PID 2676) → powershell (PID 4328) → powershell 32-bit (PID 1124)",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 4328, PPID: 2676]"
+    },
+    {
+      "pid": 1124,
+      "ppid": 4328,
+      "name": "powershell.exe",
+      "wow64": true,
+      "creation_time": "2018-08-31T01:14:45Z",
+      "flags": ["32bit_on_64bit_os", "session_0", "contains_shellcode"],
+      "context": "32-bit PowerShell child executing Cobalt Strike reflective loader via start-job -RunAs32",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 1124, PPID: 4328, Wow64: True]"
+    },
+    {
+      "pid": 4064,
+      "ppid": 2676,
+      "name": "powershell.exe",
+      "wow64": false,
+      "creation_time": "2018-08-31T01:23:24Z",
+      "flags": ["spawned_by_wmiprvse", "session_0"],
+      "context": "Second WMI-spawned PowerShell session",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 4064, PPID: 2676]"
+    },
+    {
+      "pid": 4072,
+      "ppid": 4064,
+      "name": "powershell.exe",
+      "wow64": true,
+      "creation_time": "2018-08-31T01:23:25Z",
+      "flags": ["32bit_on_64bit_os", "session_0", "contains_shellcode"],
+      "context": "32-bit child of second WMI PowerShell",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 4072, PPID: 4064, Wow64: True]"
+    },
+    {
+      "pid": 3920,
+      "ppid": 2676,
+      "name": "powershell.exe",
+      "wow64": false,
+      "creation_time": "2018-08-31T01:31:24Z",
+      "flags": ["spawned_by_wmiprvse", "session_0"],
+      "context": "Third WMI-spawned PowerShell session",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 3920, PPID: 2676]"
+    },
+    {
+      "pid": 1332,
+      "ppid": 3920,
+      "name": "powershell.exe",
+      "wow64": true,
+      "creation_time": "2018-08-31T01:31:25Z",
+      "flags": ["32bit_on_64bit_os", "session_0", "contains_shellcode", "spawned_rundll32"],
+      "context": "32-bit child of third WMI PS. Spawned 5 rundll32.exe instances for DLL injection. Most active attack process.",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 1332, PPID: 3920, Wow64: True]"
+    },
+    {
+      "pid": 7100,
+      "ppid": 7148,
+      "name": "rundll32.exe",
+      "wow64": false,
+      "creation_time": "2018-08-31T18:43:50Z",
+      "flags": ["orphan_process", "session_0"],
+      "context": "Orphaned rundll32 — parent PID 7148 not in process list. 5 threads, 337 handles. Possible injected beacon.",
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 7100, PPID: 7148 (not found)]"
+    }
+  ],
+  "exited_rundll32_instances": [
+    {"pid": 5300, "ppid": 1332, "created": "2018-08-31T01:31:44Z", "exited": "2018-08-31T01:31:46Z"},
+    {"pid": 5056, "ppid": 1332, "created": "2018-08-31T20:23:08Z", "exited": "2018-08-31T20:23:29Z"},
+    {"pid": 4240, "ppid": 1332, "created": "2018-08-31T20:23:17Z", "exited": "2018-08-31T20:23:35Z"},
+    {"pid": 1972, "ppid": 1332, "created": "2018-08-31T20:23:52Z", "exited": "2018-08-31T20:23:56Z"},
+    {"pid": 3720, "ppid": 1332, "created": "2018-08-31T21:07:21Z", "exited": "2018-08-31T21:07:28Z"}
+  ],
+  "shellcode_analysis": {
+    "type": "Cobalt Strike SMB Beacon (reflective DLL injection)",
+    "named_pipe": "\\\\.\\ pipe\\diagsvc-22",
+    "encoded_command": "powershell.exe -nop -w hidden -encodedcommand JABz...",
+    "decoded_structure": "$s=New-Object IO.MemoryStream(,[Convert]::FromBase64String(gzip_payload))",
+    "execution_flow": [
+      "1. WMI executes powershell.exe on target",
+      "2. PowerShell decodes base64 → gzip → shellcode",
+      "3. If 64-bit: start-job -RunAs32 re-launches as 32-bit PowerShell",
+      "4. func_get_proc_address resolves kernel32!VirtualAlloc",
+      "5. VirtualAlloc allocates RWX memory (0x3000, 0x40)",
+      "6. Shellcode copied to allocated memory and executed",
+      "7. Shellcode connects to named pipe \\\\.\\ pipe\\diagsvc-22",
+      "8. SMB beacon operational for lateral pivot"
+    ],
+    "shellcode_hash_note": "Shellcode extracted from [Byte[]]$var_code base64 in memory. Contains x86 native code with named pipe C2.",
+    "citation": "[TOOL: strings extraction from base-wkstn-05-memory.img, pattern: func_get_delegate_type + VirtualAlloc + var_code base64]"
+  },
+  "reclassified_from_triage": {
+    "subject_srv_exe": {
+      "original_assessment": "HIGH severity suspicious binary",
+      "revised_assessment": "BENIGN — F-Response Subject forensic acquisition agent",
+      "evidence": "Windows Event Log EventID 7045 in memory: ServiceName='F-Response Subject', ImagePath='C:\\windows\\subject_srv.exe -s base-hunt.shieldbase.lan:5682 -l 3262'",
+      "citation": "[TOOL: strings -el extraction, evidence: base-wkstn-05-memory.img, EventID: 7045, ServiceName: F-Response Subject]"
+    },
+    "proxy_172_16_4_10": {
+      "original_assessment": "HIGH severity C2 connections to 172.16.4.10:8080",
+      "revised_assessment": "BENIGN — corporate web proxy per PAC file",
+      "evidence": "PAC function FindProxyForURL returns 'PROXY 172.16.4.10:8080' for external traffic",
+      "citation": "[TOOL: strings extraction, evidence: base-wkstn-05-memory.img, pattern: FindProxyForURL]"
+    }
+  },
+  "network_connections": {
+    "total": 75,
+    "suspicious": [
+      {
+        "description": "SMB connection from 172.16.6.11",
+        "detail": "172.16.6.11:59352 → 172.16.7.15:445 ESTABLISHED. Could be legitimate or attacker lateral movement via SMB.",
+        "severity": "MEDIUM",
+        "citation": "[TOOL: volatility3.netscan, evidence: base-wkstn-05-memory.img]"
+      },
+      {
+        "description": "HTTPS to 172.16.4.6",
+        "detail": "172.16.7.15 → 172.16.4.6:443 ESTABLISHED. Internal HTTPS connection.",
+        "severity": "LOW",
+        "citation": "[TOOL: volatility3.netscan, evidence: base-wkstn-05-memory.img]"
+      }
+    ],
+    "benign_reclassified": ["172.16.4.10:8080 (corporate proxy)", "172.16.5.50:56012 → 3262 (F-Response)"]
+  },
+  "environment": {
+    "antivirus": "McAfee Endpoint Security (mfemms, mfefire, mcshield, masvc, mfevtps, HipMgmt, VsTskMgr, macompatsvc) — all running",
+    "monitoring": "Sysmon64 (PID 1892) — running with Cobalt Strike detection rules",
+    "user_session": "RDP session (rdpclip.exe PID 4232), explorer.exe PID 5284, Chrome, Outlook, IE",
+    "domain": "shieldbase.lan",
+    "nagios": "ncpa_listener (PID 476), ncpa_passive (PID 3744) — Nagios monitoring agents"
+  },
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "description": "Cobalt Strike SMB Beacon deployed via WMI lateral movement. Three WMI-spawned PowerShell execution chains created 2018-08-31 01:14-01:31 UTC. Reflective DLL injection via VirtualAlloc shellcode communicating over named pipe \\\\.\\ pipe\\diagsvc-22.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "mitre_attack": [
+        {"tactic": "Execution", "technique": "T1059.001 PowerShell"},
+        {"tactic": "Execution", "technique": "T1047 WMI"},
+        {"tactic": "Defense Evasion", "technique": "T1055.001 DLL Injection"},
+        {"tactic": "Defense Evasion", "technique": "T1027 Obfuscated Files (encoded command)"},
+        {"tactic": "Command and Control", "technique": "T1071.002 SMB Named Pipes"}
+      ],
+      "citation": "[TOOL: volatility3.psscan + strings extraction, evidence: base-wkstn-05-memory.img, PIDs: 2676→4328→1124, shellcode: VirtualAlloc+diagsvc-22]"
+    },
+    {
+      "finding_id": "F-002",
+      "description": "PowerShell PID 1332 used as post-exploitation platform. Spawned 5 rundll32.exe instances between 01:31-21:07 on Aug 31 for additional code injection or task execution.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "mitre_attack": [
+        {"tactic": "Defense Evasion", "technique": "T1218.011 Rundll32"},
+        {"tactic": "Execution", "technique": "T1059.001 PowerShell"}
+      ],
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PPID: 1332, child rundll32 PIDs: 5300, 5056, 4240, 1972, 3720]"
+    },
+    {
+      "finding_id": "F-003",
+      "description": "Orphaned rundll32.exe (PID 7100) running in Session 0 with parent PID 7148 not found. Created 2018-08-31 18:43:50. Still active at capture time with 5 threads and 337 handles — likely a persistent beacon or injected process.",
+      "confidence": "MEDIUM",
+      "evidence_tier": 1,
+      "mitre_attack": [
+        {"tactic": "Defense Evasion", "technique": "T1218.011 Rundll32"},
+        {"tactic": "Persistence", "technique": "T1055 Process Injection"}
+      ],
+      "citation": "[TOOL: volatility3.psscan, evidence: base-wkstn-05-memory.img, PID: 7100, PPID: 7148 (absent)]"
+    },
+    {
+      "finding_id": "F-004",
+      "description": "Attacker operated in presence of McAfee AV and Sysmon with Cobalt Strike detection rules. The reflective injection and named-pipe C2 likely evaded signature-based detection.",
+      "confidence": "MEDIUM",
+      "evidence_tier": 3,
+      "mitre_attack": [
+        {"tactic": "Defense Evasion", "technique": "T1562.001 Disable or Modify Tools"}
+      ],
+      "citation": "[INFERENCE: McAfee processes running (psscan), Sysmon config with CS detection rules (strings), yet attack succeeded. Confidence: MEDIUM]"
+    }
+  ]
+}
