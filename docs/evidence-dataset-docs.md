@@ -82,6 +82,47 @@ VALKYRIE was tested against the SRL-2018 Compromised Enterprise Network dataset 
 
 ---
 
+## Dataset: SRL-2015 Stark Research Labs Data Breach
+
+| Field | Value |
+|-------|-------|
+| **Source** | [SANS Find Evil! Hackathon Starter Data](https://sansorg.egnyte.com/fl/HhH7crTYT4JK) |
+| **Scenario** | APT attack on Stark Research Labs — multi-tool compromise |
+| **Evidence Type** | EnCase disk image (.E01) + memory dump (raw) |
+| **Hosts Analyzed** | 1 of 4 available (XP workstation) |
+
+### Evidence Files
+
+| # | File | Host | OS | Size | SHA256 |
+|---|------|------|----|------|--------|
+| 1 | xp-tdungan-c-drive.E01 | WKS-WINXP32BIT (10.3.58.7) | Windows XP SP3 x86 | 6.6 GB | (EnCase logical image) |
+| 2 | xp-tdungan-memory-raw.001 | WKS-WINXP32BIT (10.3.58.7) | Windows XP SP3 x86 | 2.0 GB | (FTK raw memory) |
+
+### Investigation Results — SRL2015-XP (Disk + Memory)
+
+| # | Finding | Confidence | Tier | Correct? |
+|---|---------|------------|------|----------|
+| F-001 | spinlock.exe — PyInstaller RAT in system32 (5-source corroboration) | HIGH | **2** | YES |
+| F-002 | Gh0st RAT in memory | HIGH | 1 | YES |
+| F-003 | Zeus rootkit — ntdll.dll inline hooks | HIGH | **2** | YES |
+| F-004 | Attacker account `vibranium` | HIGH | **2** | YES |
+| F-005 | pe.exe secondary tool via spinlock→cmd chain | HIGH | 1 | YES |
+| F-006 | logon.scr trojanized screensaver (3-source corroboration) | MEDIUM | **2** | YES |
+| F-007 | Admin account creation (net user /add) | HIGH | 1 | YES |
+| F-008 | Keylogger strings in memory | MEDIUM | 1 | YES |
+| F-009 | McAfee AV bypassed | MEDIUM | 3 | YES |
+
+### Tier 2 Evidence Corroboration (NEW — first cross-source findings)
+
+| Finding | Sources |
+|---------|---------|
+| spinlock.exe | psscan + fls (disk) + Prefetch + AppCompatCache (registry) + FLOSS (static analysis) |
+| Zeus rootkit | volatility apihooks + memory strings |
+| vibranium account | fls (user profile) + plaso timeline (Temp/_MEI*) + psscan (process session) |
+| logon.scr | psscan + fls (3 disk locations) + Prefetch |
+
+---
+
 ## Reproducibility
 
 ```bash

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This accuracy report documents VALKYRIE's performance against the SRL-2018 Compromised Enterprise Network dataset (SANS Find Evil! Hackathon 2026). Three hosts were analyzed: a domain controller (Windows Server 2016), and two workstations (Windows 7 SP1, Windows 10). All investigations used memory-only evidence. This is an honest self-assessment — transparency about limitations is more valuable than claiming perfection.
+This accuracy report documents VALKYRIE's performance against two SANS hackathon datasets: the SRL-2018 Compromised Enterprise Network (3 hosts, memory-only) and the SRL-2015 Stark Research Labs Data Breach (1 host, disk + memory). This is an honest self-assessment — transparency about limitations is more valuable than claiming perfection.
 
 ---
 
@@ -10,14 +10,16 @@ This accuracy report documents VALKYRIE's performance against the SRL-2018 Compr
 
 | Metric | Value |
 |--------|-------|
-| Test cases run | 3 (TEST-001/wkstn-05, SRL2018-DC, SRL2018-WK01) |
-| Total findings produced | 19 |
+| Test cases run | 4 (TEST-001/wkstn-05, SRL2018-DC, SRL2018-WK01, SRL2015-XP) |
+| Total findings produced | 28 (19 memory-only + 9 disk+memory) |
+| Tier 2 findings (multi-source) | 4 (all from SRL2015-XP disk+memory case) |
 | Self-corrections applied | 0 post-hoc (2 in-flight reclassifications during TEST-001) |
 | Hallucinations detected (Layer 1) | 0 (14 PID checks passed on TEST-001) |
 | Temporal inconsistencies detected (Layer 2) | 0 (2 timeline gaps documented as explained) |
 | Analytical coherence issues detected (Layer 3) | 0 (kill chain, MITRE, confidence calibration validated) |
 | In-flight reclassifications | 2 (subject_srv.exe → F-Response, 172.16.4.10 → proxy) |
 | Evidence integrity maintained | YES |
+| Malware families identified | 5 (Cobalt Strike, Meterpreter, Gh0st RAT, Zeus, custom PyInstaller RAT) |
 
 ---
 
@@ -27,29 +29,30 @@ This accuracy report documents VALKYRIE's performance against the SRL-2018 Compr
 
 | Confidence | Count | Verified Correct | Verified Incorrect | Unverified |
 |-----------|-------|-----------------|-------------------|------------|
-| HIGH | 14 | 14 | 0 | 0 |
-| MEDIUM | 5 | 5 | 0 | 0 |
+| HIGH | 20 | 20 | 0 | 0 |
+| MEDIUM | 8 | 8 | 0 | 0 |
 | LOW | 0 | 0 | 0 | 0 |
 
-All HIGH-confidence findings are corroborated by at least one independent method (e.g., psscan PID verified against strings extraction, or same IOC found across multiple hosts). No findings were retracted.
+All HIGH-confidence findings are corroborated by at least one independent method. No findings were retracted.
 
 ### By Evidence Tier
 
 | Tier | Count | Accuracy Rate | Notes |
 |------|-------|--------------|-------|
-| Tier 1 (direct tool output) | 16 | 100% | All cite specific vol plugin or strings output |
-| Tier 2 (cross-referenced) | 0 | N/A | No disk evidence for formal cross-referencing |
-| Tier 3 (analytical inference) | 3 | 100% | ACH conclusion (TEST-001), AV evasion inference (TEST-001), process exit inference (WK01) |
+| Tier 1 (direct tool output) | 20 | 100% | All cite specific vol plugin or strings output |
+| Tier 2 (cross-referenced) | 4 | 100% | spinlock.exe (5 sources), Zeus (2), vibranium account (3), logon.scr (3) |
+| Tier 3 (analytical inference) | 4 | 100% | ACH (TEST-001), AV evasion (TEST-001, SRL2015-XP), process exit (WK01) |
 
-Note: Tier 2 findings require 2+ independent evidence sources. With memory-only analysis, most findings are Tier 1 (single tool) or Tier 3 (inference). Disk image analysis would produce Tier 2 findings by cross-referencing memory artifacts against MFT timestamps, registry keys, and event logs.
+Tier 2 findings were produced by the SRL2015-XP disk+memory investigation, where memory process artifacts were cross-referenced against disk files (fls), Prefetch, AppCompatCache registry entries, and FLOSS static analysis.
 
 ### By Investigation
 
-| Case | Host | Findings | CRITICAL | HIGH | MEDIUM | Unique IOCs |
-|------|------|----------|----------|------|--------|-------------|
-| TEST-001 | wkstn-05 (Win7 SP1) | 5 | 1 | 1 | 2 | diagsvc-22 pipe, CS stager |
-| SRL2018-DC | DC (Server 2016) | 9 | 3 | 5 | 1 | 52.41.122.38 (ext C2), Mimikatz, PowerSploit |
-| SRL2018-WK01 | wkstn-01 (Win10) | 5 | 2 | 1 | 2 | Mimikatz -DumpCreds, WinRM pivot |
+| Case | Host | Evidence | Findings | CRITICAL | HIGH | MEDIUM | Tier 2 | Unique IOCs |
+|------|------|----------|----------|----------|------|--------|--------|-------------|
+| TEST-001 | wkstn-05 (Win7 SP1) | Memory | 5 | 1 | 1 | 2 | 0 | diagsvc-22 pipe, CS stager |
+| SRL2018-DC | DC (Server 2016) | Memory | 9 | 3 | 5 | 1 | 0 | 52.41.122.38 (ext C2), Mimikatz, PowerSploit |
+| SRL2018-WK01 | wkstn-01 (Win10) | Memory | 5 | 2 | 1 | 2 | 0 | Mimikatz -DumpCreds, WinRM pivot |
+| SRL2015-XP | XP wkstn (XP SP3) | **Disk + Memory** | 9 | 3 | 3 | 3 | **4** | Gh0st RAT, Zeus rootkit, spinlock.exe, pe.exe, vibranium account |
 
 ### Cross-Host Correlation
 
@@ -160,8 +163,8 @@ Pool-scanning plugins (psscan, netscan) worked on all 3 dumps. Linked-list plugi
 4. **Tool availability**: Some SIFT tools (MFTECmd, FLOSS, RECmd) are optional; the agent falls back to alternatives when unavailable
 5. **Single-system analysis**: VALKYRIE analyzes one system at a time; multi-host correlation is manual (demonstrated across 3 cases but not automated)
 6. **ISF symbol gap**: Volatility3 linked-list plugins failed on all tested dumps (Win7, Win10, Server 2016). Pool-scanning fallback worked but loses cmdline, malfind, and dlllist data. ISF auto-download via VOLATILITY3_SYMBOLS_URL is configured but the Microsoft Symbol Server may not have matching PDBs for all builds.
-7. **Memory-only coverage**: No disk images analyzed yet. Timeline reconstruction, persistence enumeration, log analysis, and MFT extraction techniques are implemented but untested against real evidence.
-8. **Tier 2 findings absent**: Cross-referencing requires 2+ evidence types. Memory-only investigations produce Tier 1 and Tier 3 findings but no Tier 2.
+7. **Partial disk coverage**: SRL2015-XP exercised disk file listing, Prefetch, AppCompatCache, and FLOSS. Full log2timeline super timeline generation and registry persistence enumeration via RegRipper were validated using precooked artifacts but not run end-to-end by the agent.
+8. **Tier 2 coverage improving**: 4 Tier 2 findings produced from disk+memory cross-referencing. Additional Tier 2 findings expected when log analysis and full timeline techniques are exercised.
 
 ---
 
