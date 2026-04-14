@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/valkyrie-banner.jpeg" alt="VALKYRIE" width="100%"/>
+  <img src="docs/images/valkyrie-banner-v2.jpeg" alt="VALKYRIE" width="100%"/>
 </p>
 
 <h1 align="center">VALKYRIE</h1>
