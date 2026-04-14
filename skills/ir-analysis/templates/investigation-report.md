@@ -72,6 +72,37 @@
 
 ---
 
+## Sensitivity Analysis
+
+What would change the conclusion:
+
+| Question | Answer |
+|----------|--------|
+| **Most critical evidence** | {{CRITICAL_EVIDENCE}} |
+| **If that evidence is wrong** | {{IMPACT_IF_WRONG}} |
+| **What would refute the conclusion** | {{REFUTATION_EVIDENCE}} |
+| **Linchpin assumptions** | {{LINCHPIN_ASSUMPTIONS}} |
+
+---
+
+## Audit Trail — How to Verify Each Finding
+
+Each finding traces back to a specific tool execution. To independently verify any finding:
+
+{{#FINDINGS_AUDIT}}
+### {{FINDING_ID}}: {{FINDING_TITLE}}
+
+**Evidence lineage:**
+1. **Tool**: {{TOOL_NAME}} on {{EVIDENCE_FILE}}
+   - Output: `{{OUTPUT_PATH}}` ({{OUTPUT_DETAIL}})
+   - SHA256 of output: `{{OUTPUT_SHA256}}`
+2. **Verification**: {{VERIFICATION_METHOD}}
+   - How to reproduce: `{{REPRODUCE_COMMAND}}`
+
+{{/FINDINGS_AUDIT}}
+
+---
+
 ## Investigative Methodology
 
 ### Techniques Applied

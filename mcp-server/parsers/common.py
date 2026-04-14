@@ -59,6 +59,7 @@ def safe_subprocess(
     timeout: int = DEFAULT_TIMEOUT,
     case_dir: str | None = None,
     tool_name: str = "",
+    env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Execute a forensic tool safely with denylist enforcement and audit logging.
 
@@ -70,6 +71,7 @@ def safe_subprocess(
         timeout: Maximum execution time in seconds.
         case_dir: Path to the active case directory for audit logging.
         tool_name: Logical tool name for audit trail (e.g., "get_partition_layout").
+        env: Optional environment variable overrides (merged with os.environ).
 
     Returns:
         Dict with keys: stdout, stderr, exit_code, sha256, duration_seconds, truncated.
@@ -89,6 +91,11 @@ def safe_subprocess(
     # --- Build the command ---
     cmd = [binary] + args
 
+    # --- Build subprocess environment ---
+    run_env = None
+    if env:
+        run_env = {**os.environ, **env}
+
     # --- Execute with shell=False ---
     start_time = time.monotonic()
     try:
@@ -98,6 +105,7 @@ def safe_subprocess(
             shell=False,  # CRITICAL: Never use shell=True
             timeout=timeout,
             text=False,  # Capture as bytes to handle binary output
+            env=run_env,
         )
     except FileNotFoundError:
         raise ToolExecutionError(

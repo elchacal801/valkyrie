@@ -70,13 +70,25 @@ cast install --mode=server teamdfir/sift-saltstack
 exit
 ```
 
+Install FLOSS (required for malware triage — deobfuscates strings that `strings` misses):
+
+```bash
+FLOSS_VERSION="3.1.1"
+curl -fsSL "https://github.com/mandiant/flare-floss/releases/download/v${FLOSS_VERSION}/floss-v${FLOSS_VERSION}-linux.zip" -o /tmp/floss.zip
+unzip -o /tmp/floss.zip -d /tmp/floss
+sudo mv /tmp/floss/floss /usr/local/bin/floss
+sudo chmod +x /usr/local/bin/floss
+floss --version
+```
+
 Verify the key tools are installed:
 
 ```bash
-which mmls fls icat yara strings
+which mmls fls icat yara strings floss
 vol --help 2>&1 | head -3
 log2timeline.py --version 2>&1 | head -1
 rip.pl -h 2>&1 | head -3
+floss --version
 ```
 
 ---

@@ -2,7 +2,7 @@
 name: investigate
 description: Conduct autonomous incident response investigation on forensic evidence using structured analytical techniques — inventory evidence, triage anomalies, reconstruct timelines, correlate artifacts, test competing hypotheses, validate findings, and produce a defensible investigative report with full citations to specific tool outputs and artifact locations.
 argument-hint: "[technique or flags, e.g. timeline, memory, --guided, --lean, --evidence-path /cases/001/evidence]"
-allowed-tools: Task, Read, Write, Glob, Grep, Bash, mcp__valkyrie__get_partition_layout, mcp__valkyrie__list_files, mcp__valkyrie__extract_file, mcp__valkyrie__generate_timeline, mcp__valkyrie__extract_mft, mcp__valkyrie__analyze_memory, mcp__valkyrie__get_registry_key, mcp__valkyrie__check_persistence, mcp__valkyrie__scan_yara, mcp__valkyrie__extract_strings
+allowed-tools: Agent, Task, Read, Write, Glob, Grep, Bash, mcp__valkyrie__get_partition_layout, mcp__valkyrie__list_files, mcp__valkyrie__extract_file, mcp__valkyrie__generate_timeline, mcp__valkyrie__extract_mft, mcp__valkyrie__analyze_memory, mcp__valkyrie__get_registry_key, mcp__valkyrie__check_persistence, mcp__valkyrie__scan_yara, mcp__valkyrie__extract_strings, mcp__valkyrie__dump_process_memory
 ---
 
 # VALKYRIE IR Analysis Skill
@@ -31,6 +31,36 @@ Flags combine: `/investigate --guided --lean --evidence-path /cases/001/evidence
 ## Execution
 
 **You MUST read the orchestrator protocol before proceeding.** It contains phase routing, technique selection logic, and the technique routing table.
+
+### Step -1 — Investigation Banner
+
+When the investigation starts, display this banner to clearly mark the beginning of a VALKYRIE investigation:
+
+```
+========================================================================
+  VALKYRIE — Autonomous IR Investigation
+  SANS Find Evil! Hackathon 2026
+------------------------------------------------------------------------
+  Case ID:    [case-id]
+  Evidence:   [evidence-path]
+  Mode:       [adaptive | guided | lean | direct:<technique>]
+  Started:    [timestamp]
+========================================================================
+```
+
+### Phase Progress
+
+At the start of each phase, display a progress marker:
+
+```
+--- Phase [N]/6: [Phase Name] -------------------------------------------
+```
+
+At the end of each phase, display a completion summary:
+
+```
+[Phase N complete] [key metric, e.g., "5 findings" or "0 corrections"]
+```
 
 ### Step 0 — Context Inference
 

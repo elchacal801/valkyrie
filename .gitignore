@@ -22,8 +22,12 @@ env/
 .DS_Store
 Thumbs.db
 
-# Case data (never commit evidence)
+# Case data (never commit evidence or investigation output)
 /cases/
+/case-output/
+
+# Temporary scripts
+run_vol.py
 
 # Claude Code local settings (user-specific)
 .claude/settings.local.json

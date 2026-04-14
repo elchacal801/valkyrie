@@ -233,8 +233,8 @@ TOOLS: list[Tool] = [
         description=(
             "Analyze a memory dump using Volatility 3. Runs a specified plugin "
             "and returns parsed structured output. Only allowlisted plugins can be "
-            "executed (pslist, pstree, netscan, malfind, handles, dlllist, cmdline, "
-            "filescan, hivelist, timeliner)."
+            "executed. Pool-scanning plugins (psscan, netscan, filescan) work even "
+            "when ISF symbols are missing. Use 'banners' to check OS identification."
         ),
         inputSchema={
             "type": "object",
@@ -247,9 +247,10 @@ TOOLS: list[Tool] = [
                     "type": "string",
                     "description": "Volatility 3 plugin to run",
                     "enum": [
-                        "pslist", "pstree", "netscan", "malfind",
-                        "handles", "dlllist", "cmdline", "filescan",
-                        "hivelist", "timeliner",
+                        "pslist", "psscan", "pstree", "cmdline", "envars",
+                        "malfind", "ldrmodules", "ssdt", "vadinfo",
+                        "handles", "dlllist", "netscan", "svcscan",
+                        "filescan", "hivelist", "timeliner", "banners",
                     ],
                 },
                 "pid": {
@@ -263,6 +264,33 @@ TOOLS: list[Tool] = [
                 },
             },
             "required": ["dump_path", "plugin"],
+        },
+    ),
+    Tool(
+        name="dump_process_memory",
+        description=(
+            "Dump a process's memory regions from a memory image for FLOSS/YARA "
+            "analysis. Writes dumped files to the specified output directory (must "
+            "NOT be in the evidence directory). Use this to extract suspicious "
+            "process memory before running extract_strings or scan_yara on it."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "dump_path": {
+                    "type": "string",
+                    "description": "Path to the memory dump file",
+                },
+                "pid": {
+                    "type": "integer",
+                    "description": "Process ID to dump",
+                },
+                "output_dir": {
+                    "type": "string",
+                    "description": "Directory to write dumped files (e.g., /cases/CASE-001/analysis/dumps/)",
+                },
+            },
+            "required": ["dump_path", "pid", "output_dir"],
         },
     ),
     # --- Registry Tools (RegRipper / RECmd) ---
@@ -433,6 +461,13 @@ async def handle_tool_call(name: str, arguments: dict) -> str:
                 plugin=arguments["plugin"],
                 pid=arguments.get("pid"),
                 extra_args=arguments.get("extra_args", []),
+                case_dir=case_dir,
+            )
+        elif name == "dump_process_memory":
+            result = memory.dump_process_memory(
+                dump_path=arguments["dump_path"],
+                pid=arguments["pid"],
+                output_dir=arguments["output_dir"],
                 case_dir=case_dir,
             )
         elif name == "get_registry_key":

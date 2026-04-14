@@ -90,7 +90,7 @@ After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess
 | Evidence Available | Techniques Auto-Selected |
 |-------------------|--------------------------|
 | Disk image only | timeline, persistence, malware |
-| Memory dump only | memory |
+| Memory dump only | memory, malware (via `dump_process_memory` + triage on suspect PIDs), persistence (via svcscan/ldrmodules for memory-based service and module enumeration) |
 | Disk + Memory | timeline, persistence, memory, correlation, hypothesis |
 | Disk + Logs | timeline, persistence, logs, correlation |
 | Disk + Memory + Logs | timeline, persistence, memory, logs, correlation, hypothesis |
@@ -215,7 +215,32 @@ Execute all 6 phases in order. Each phase reads prior phase output from the case
 3. Generate machine-readable findings using `templates/finding-template.json`
 4. Generate accuracy self-assessment using `templates/accuracy-report.md`
 5. Write all outputs to `report/` directory
-6. Present summary to user with key findings, confidence levels, and self-corrections applied
+6. Present the investigation summary to the user in this format:
+
+```
+========================================================================
+  INVESTIGATION COMPLETE — [CASE-ID]
+========================================================================
+
+  Findings:       [N] total ([CRITICAL] critical, [HIGH] high, [MEDIUM] medium)
+  Evidence Tier:  [N] Tier 1 | [N] Tier 2 | [N] Tier 3
+  Self-Correction: [N] corrections applied, [N] in-flight reclassifications
+  Techniques:     [list of techniques run]
+  MITRE ATT&CK:  [N] techniques mapped
+
+  TOP FINDINGS:
+  [F-001] [CRITICAL] [one-line description]
+  [F-002] [HIGH]     [one-line description]
+  [F-003] [HIGH]     [one-line description]
+
+  IOCs:
+  - [type]: [value]
+  - [type]: [value]
+
+  Report: [case-dir]/report/investigation-report.md
+  Audit:  [case-dir]/logs/tool-execution.jsonl
+========================================================================
+```
 
 ---
 

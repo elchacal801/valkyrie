@@ -6,7 +6,7 @@
 # Claude Code settings and hooks, and verifies the installation.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/elchacal801/find-evil-agent/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/elchacal801/valkyrie/main/install.sh | bash
 #
 #   Or locally:
 #   chmod +x install.sh && ./install.sh
@@ -147,12 +147,14 @@ if [ "$PLASO_FOUND" = "false" ]; then
     warn "Plaso (log2timeline) not found — timeline generation will be limited"
 fi
 
+# Required: FLOSS (FLARE Obfuscated String Solver) for malware triage
+check_tool "floss"           "true"  || ERRORS=$((ERRORS + 1))
+
 # Optional tools
 check_tool "MFTECmd"        "false"
 check_tool "analyzeMFT.py"  "false"
 check_tool "rip.pl"         "false"
 check_tool "RECmd"           "false"
-check_tool "floss"           "false"
 check_tool "ewfverify"      "false"
 
 echo ""
@@ -245,12 +247,29 @@ cat > "$SETTINGS_FILE" << SETTINGS_EOF
       "mcp__valkyrie__check_persistence",
       "mcp__valkyrie__scan_yara",
       "mcp__valkyrie__extract_strings",
+      "mcp__valkyrie__dump_process_memory",
       "Bash(sha256sum *)",
       "Bash(ls *)",
       "Bash(file *)",
       "Bash(stat *)",
       "Bash(wc *)",
       "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(cat *)",
+      "Bash(strings *)",
+      "Bash(grep *)",
+      "Bash(xxd *)",
+      "Bash(hexdump *)",
+      "Bash(python3 -c *)",
+      "Bash(vol *)",
+      "Bash(jq *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(cut *)",
+      "Bash(tr *)",
+      "Bash(find * -name *)",
+      "Bash(find * -type *)",
+      "Bash(mkdir *)",
       "Bash(mount -o ro*)"
     ],
     "deny": [
@@ -301,6 +320,18 @@ cat > "$SETTINGS_FILE" << SETTINGS_EOF
 SETTINGS_EOF
 
 success "Claude Code settings configured"
+
+# --- Install MCP config globally so subagents and any-directory usage work ---
+# Subagents inherit global settings, not project settings. The global config
+# must have the full VALKYRIE permission set for parallel investigations to work.
+GLOBAL_CLAUDE_DIR="${HOME}/.claude"
+mkdir -p "$GLOBAL_CLAUDE_DIR"
+if [ -f "$GLOBAL_CLAUDE_DIR/settings.local.json" ]; then
+    cp "$GLOBAL_CLAUDE_DIR/settings.local.json" "$GLOBAL_CLAUDE_DIR/settings.local.json.pre-valkyrie"
+    info "Backed up existing global settings to settings.local.json.pre-valkyrie"
+fi
+cp "$SETTINGS_FILE" "$GLOBAL_CLAUDE_DIR/settings.local.json"
+success "MCP settings installed globally at $GLOBAL_CLAUDE_DIR/settings.local.json"
 
 # --- Create default cases directory ---
 sudo mkdir -p /cases

@@ -310,9 +310,13 @@ class TestMemoryParsers:
 
     def test_plugin_allowlist(self):
         from tools.memory import ALLOWED_PLUGINS
-        # All expected plugins present
-        expected = {"pslist", "pstree", "netscan", "malfind", "handles",
-                    "dlllist", "cmdline", "filescan", "hivelist", "timeliner"}
+        # All expected plugins present (expanded from original 10 to 17)
+        expected = {
+            "pslist", "psscan", "pstree", "cmdline", "envars",
+            "malfind", "ldrmodules", "ssdt", "vadinfo",
+            "handles", "dlllist", "netscan", "svcscan",
+            "filescan", "hivelist", "timeliner", "banners",
+        }
         assert set(ALLOWED_PLUGINS.keys()) == expected
 
         # Dangerous plugins NOT present
@@ -453,3 +457,111 @@ class TestResponseEnvelope:
         serialized = json.dumps(resp, default=str)
         deserialized = json.loads(serialized)
         assert deserialized["data"]["nested"]["key"] == [1, 2, 3]
+
+
+# ============================================================================
+# Memory failure scenario tests (ISF symbol mismatch, empty results)
+# ============================================================================
+
+class TestMemoryFailureScenarios:
+    """Tests for graceful degradation when Volatility plugins return empty results."""
+
+    def test_pslist_empty_headers_only(self):
+        """Simulate ISF symbol failure: headers present but no data rows."""
+        from tools.memory import _parse_pslist
+        raw = (
+            "Volatility 3 Framework 2.27.0\n\n"
+            "PID\tPPID\tImageFileName\tOffset(V)\tThreads\tHandles\tSessionId\tWow64\tCreateTime\tExitTime\tFile output\n"
+        )
+        result = _parse_pslist(raw)
+        assert result == []
+
+    def test_psscan_in_plugin_parsers(self):
+        """Verify psscan is registered and uses pslist parser."""
+        from tools.memory import PLUGIN_PARSERS, _parse_pslist
+        assert "psscan" in PLUGIN_PARSERS
+        assert PLUGIN_PARSERS["psscan"] is _parse_pslist
+
+    def test_new_plugins_in_allowlist(self):
+        """Verify all new pool-scanning and enumeration plugins are allowlisted."""
+        from tools.memory import ALLOWED_PLUGINS
+        for plugin in ["psscan", "envars", "svcscan", "ldrmodules", "ssdt", "vadinfo", "banners"]:
+            assert plugin in ALLOWED_PLUGINS, f"{plugin} missing from ALLOWED_PLUGINS"
+
+    def test_generic_parser_empty_output(self):
+        """Generic table parser handles empty and header-only input."""
+        from tools.memory import _parse_generic_table
+        assert _parse_generic_table("") == []
+        assert _parse_generic_table("Volatility 3 Framework 2.27.0\n") == []
+        assert _parse_generic_table("Header1\tHeader2\n") == []
+
+    def test_malfind_empty_output(self):
+        from tools.memory import _parse_malfind
+        assert _parse_malfind("") == []
+        assert _parse_malfind("Volatility 3 Framework 2.27.0\n\n") == []
+
+    def test_cmdline_empty_output(self):
+        from tools.memory import _parse_cmdline
+        assert _parse_cmdline("") == []
+        assert _parse_cmdline("PID\tProcess\tArgs\n") == []
+
+    def test_netscan_empty_output(self):
+        from tools.memory import _parse_netscan
+        assert _parse_netscan("") == []
+
+    def test_dump_args_blocked_in_analyze_memory(self):
+        """--dump is still blocked in the generic analyze_memory tool."""
+        from tools.memory import BLOCKED_PLUGIN_ARGS
+        assert "--dump" in BLOCKED_PLUGIN_ARGS
+
+    def test_symbol_env_cache(self):
+        """Symbol env resolution returns consistent env dict."""
+        from tools.memory import _get_symbol_env, SYMBOL_SERVER_URL
+        env = _get_symbol_env("/fake/dump.raw")
+        assert "VOLATILITY3_SYMBOLS_URL" in env
+        assert env["VOLATILITY3_SYMBOLS_URL"] == SYMBOL_SERVER_URL
+        # Second call should return cached result
+        env2 = _get_symbol_env("/fake/dump.raw")
+        assert env is env2
+
+
+class TestDumpProcessMemory:
+    """Tests for the dump_process_memory safety checks."""
+
+    def test_dump_rejects_evidence_directory(self):
+        """dump_process_memory refuses to write to evidence-protected path."""
+        from tools.memory import dump_process_memory
+        import denylist
+        denylist.register_evidence_path("/cases/TEST-SAFETY/evidence")
+        try:
+            result = dump_process_memory(
+                dump_path="/cases/TEST-SAFETY/evidence/mem.raw",
+                pid=4832,
+                output_dir="/cases/TEST-SAFETY/evidence",
+            )
+            assert result["status"] == "error"
+            assert "protected" in result["error"].lower() or "blocked" in result["error"].lower()
+        finally:
+            denylist.BLOCKED_WRITE_PATHS.discard("/cases/TEST-SAFETY/evidence")
+
+    def test_dump_rejects_missing_dump(self):
+        """dump_process_memory returns error for missing dump file."""
+        from tools.memory import dump_process_memory
+        result = dump_process_memory(
+            dump_path="/nonexistent/memory.raw",
+            pid=4832,
+            output_dir="/tmp/test-dump",
+        )
+        assert result["status"] == "error"
+        assert "not found" in result["error"].lower()
+
+
+class TestSafeSubprocessEnv:
+    """Test that safe_subprocess passes environment variables correctly."""
+
+    def test_env_parameter_accepted(self):
+        """safe_subprocess accepts the env parameter without error."""
+        import inspect
+        from parsers.common import safe_subprocess
+        sig = inspect.signature(safe_subprocess)
+        assert "env" in sig.parameters

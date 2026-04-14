@@ -53,7 +53,7 @@
 │  │  │                                                      │  │  │
 │  │  │  disk.py      ── mmls, fls, icat                     │  │  │
 │  │  │  timeline.py  ── log2timeline, MFTECmd               │  │  │
-│  │  │  memory.py    ── volatility3 (10-plugin allowlist)   │  │  │
+│  │  │  memory.py    ── volatility3 (17-plugin allowlist)   │  │  │
 │  │  │  registry.py  ── regripper, RECmd                    │  │  │
 │  │  │  scanner.py   ── yara, strings/FLOSS                 │  │  │
 │  │  └──────────────────────────────────────────────────────┘  │  │
@@ -108,7 +108,7 @@ VALKYRIE enforces evidence integrity through **5 architectural layers**. These a
 
 ### Layer 1: Typed MCP Functions (Architectural)
 
-The MCP server exposes **10 typed functions**, not a generic shell. The agent can call `get_partition_layout(image_path)` or `analyze_memory(dump_path, plugin)`, but it **cannot** construct arbitrary shell commands. This is the most fundamental constraint — the attack surface is limited to 10 well-defined operations.
+The MCP server exposes **11 typed functions**, not a generic shell. The agent can call `get_partition_layout(image_path)` or `analyze_memory(dump_path, plugin)`, but it **cannot** construct arbitrary shell commands. This is the most fundamental constraint — the attack surface is limited to 10 well-defined operations.
 
 **What it prevents**: Arbitrary command execution, filesystem modification, network access
 **How it's enforced**: Python MCP server only registers specific `Tool` objects; JSON-RPC dispatch only routes to known handlers
