@@ -1,8 +1,11 @@
 # Investigation Report: SRL2015-XP
 
 **Date**: 2026-04-14
+
 **Examiner**: VALKYRIE (Autonomous IR Agent)
+
 **Classification**: APT — Multi-Tool Compromise (Gh0st RAT + Zeus + PyInstaller RAT)
+
 **Status**: COMPLETE (disk + memory analysis)
 
 ---
@@ -113,17 +116,109 @@ Analysis of Windows XP SP3 workstation WKS-WINXP32BIT (10.3.58.7, user tdungan) 
 
 ---
 
-## Significance for Hackathon Submission
+## Competing Hypotheses Assessment
 
-This investigation demonstrates capabilities not shown in the SRL-2018 memory-only cases:
+**Not performed.** Although 2 evidence types were available (disk + memory), hypothesis testing (Phase 4) was not executed during this investigation run. This is an identified gap — with disk and memory evidence, ACH should have been performed to evaluate competing explanations for the multi-tool compromise pattern.
 
-1. **Tier 2 findings**: spinlock.exe corroborated across 5 independent sources (memory + disk + Prefetch + registry + FLOSS)
-2. **Disk forensics**: SleuthKit file extraction (icat), recursive file listing (fls), EnCase image handling (ewfinfo)
-3. **Timeline reconstruction**: Plaso super timeline correlation with memory process timestamps
-4. **Malware triage**: FLOSS identified PyInstaller packaging; YARA-compatible hashes extracted
-5. **Cross-evidence correlation**: Memory process tree + disk file timestamps + registry AppCompatCache → unified attack timeline
-6. **Multiple malware families**: Gh0st RAT + Zeus + custom RAT in a single investigation
+To run hypothesis testing on this case, use: `/investigate --iterate SRL2015-XP hypothesis`
 
 ---
 
-*VALKYRIE | Case: SRL2015-XP | 2026-04-14*
+## Sensitivity Analysis
+
+**Not performed.** Sensitivity analysis requires hypothesis testing (Phase 4), which was not executed for this investigation. See Competing Hypotheses Assessment above for rationale.
+
+---
+
+## Audit Trail — How to Verify Each Finding
+
+**Not performed.** Full audit trail generation requires Phase 4 (Correlation & Synthesis) to assign evidence lineage and verification methods to each finding.
+
+Tool execution logs are available at `docs/sample-output/SRL2015-XP/logs/tool-execution.jsonl` for manual verification.
+
+---
+
+## Investigative Methodology
+
+### Techniques Applied
+
+| Technique | Purpose | Key Output |
+|----------|---------|------------|
+| Memory Analysis | Process enumeration, rootkit detection, string extraction | Gh0st RAT, Zeus hooks, process tree |
+| Disk Forensics | File listing, file extraction, Prefetch analysis | spinlock.exe on disk, PyInstaller artifacts |
+| Timeline Reconstruction | Plaso super timeline, MFT correlation | Attack timeline (Apr 4–6) |
+| Malware Triage | FLOSS static analysis, hash extraction | PyInstaller identification, SHA256 hashes |
+
+### Tool Execution Summary
+
+| Tool | Invocations | Evidence Analyzed | Key Findings Produced |
+|------|------------|-------------------|----------------------|
+| volatility3 (psscan) | 2+ | Memory dump | Process tree, suspect PIDs, Gh0st RAT strings |
+| volatility apihooks (precooked) | 1 | Memory dump | Zeus inline hooks in ntdll.dll |
+| sleuthkit (fls) | 3+ | Disk image (EnCase) | File listings, spinlock.exe location, Prefetch |
+| sleuthkit (icat) | 2+ | Disk image (EnCase) | File extraction for triage |
+| plaso (log2timeline) | 1 | Disk image | Super timeline |
+| FLOSS | 1 | spinlock.exe | PyInstaller markers, static strings |
+| strings (ASCII + UTF-16) | 4+ | Memory dump + extracted files | Malware family identification, command strings |
+| sha256sum | 2+ | Evidence files + extracted artifacts | Integrity hashes |
+
+### Evidence Sources
+
+| # | File | Type | SHA256 (first 16) | Findings Sourced |
+|---|------|------|--------|-----------------|
+| 1 | Disk image | EnCase (.E01), 6.6 GB | N/A | F-001, F-004, F-005, F-006, F-007 |
+| 2 | Memory dump | Raw, 2.0 GB | N/A | F-001, F-002, F-003, F-004, F-006, F-008, F-009 |
+
+---
+
+## Self-Correction Summary
+
+**Not performed.** Self-correction (Phase 5) was not executed during this investigation. Although this case had multi-source evidence ideal for 3-layer validation, Phase 5 was skipped.
+
+To run self-correction on this case, use: `/investigate --iterate SRL2015-XP`
+
+---
+
+## Limitations and Caveats
+
+### Evidence Not Analyzed
+- No event logs (.evtx) — Windows XP SP3 has limited native logging; no Sysmon
+- No network capture — cannot analyze C2 traffic to Gh0st RAT controller or data exfiltration
+- No memory dumps from other hosts on the network — lateral movement scope unknown
+- Registry hives not directly analyzed (only via Plaso timeline entries)
+
+### Techniques Not Applied
+- Hypothesis testing / ACH (should have been run with 2 evidence types — see gap above)
+- Self-correction / 3-layer validation (Phase 5 not executed)
+- Log analysis (no .evtx available on Windows XP)
+- IOC enrichment (not performed)
+
+### Known Gaps
+- **C2 infrastructure unknown**: Gh0st RAT controller IP/domain not identified from available evidence
+- **Initial access vector unknown**: How the attacker first compromised the workstation is not determinable
+- **Zeus rootkit scope**: Inline hooks detected but full rootkit analysis (hidden files, hidden processes) not completed
+- **`vibranium` account origin**: Account creation method confirmed (net user /add) but the session or exploit that enabled it is unknown
+- **Data exfiltration not assessed**: Keylogger was present but what data was captured and where it was sent is unknown
+
+---
+
+## Citations
+
+Every finding in this report traces to a specific tool execution. Full tool execution logs are available at `docs/sample-output/SRL2015-XP/logs/tool-execution.jsonl`.
+
+| Citation ID | Format | Reference |
+|------------|--------|-----------|
+| C-001 | TOOL | volatility3.psscan — process list with PIDs, PPIDs, timestamps |
+| C-002 | TOOL | volatility apihooks — ntdll.dll inline/trampoline hooks (Zeus rootkit) |
+| C-003 | TOOL | sleuthkit.fls — recursive file listing (spinlock.exe, Prefetch, _MEI temp dirs) |
+| C-004 | TOOL | sleuthkit.icat — file extraction for triage |
+| C-005 | TOOL | plaso (log2timeline) — super timeline with AppCompatCache, MFT, Prefetch entries |
+| C-006 | TOOL | FLOSS — static string analysis (PyInstaller markers in spinlock.exe) |
+| C-007 | TOOL | strings (ASCII + UTF-16) — Gh0st RAT identification, keylogger strings, admin account creation |
+| C-008 | TOOL | sha256sum — evidence and artifact integrity hashes |
+
+---
+
+*Report generated by VALKYRIE (Validated Autonomous Logic for Kill-chain Yielding Rapid Incident Examination)*
+*Case directory: docs/sample-output/SRL2015-XP*
+*Report timestamp: 2026-04-14T10:00:00Z*

@@ -210,8 +210,21 @@ Execute all 6 phases in order. Each phase reads prior phase output from the case
 
 ### Phase 6 — Reporting
 
+#### Report Standardization Rule
+
+**Every report MUST include ALL sections defined in `templates/investigation-report.md`, regardless of investigation mode or evidence available.** This is a non-negotiable requirement for operational IR/IM use — the report consumer must be able to trust that the output structure is identical every time.
+
+When a section's corresponding phase or technique was not executed:
+- The section heading MUST still appear in the report
+- The section body MUST state: **"Not performed."** followed by a one-line reason (e.g., "Only one evidence type was available — hypothesis testing requires 2+ independent evidence sources for cross-referencing." or "Lean mode was selected for rapid triage — Phase 4 (Correlation) is skipped in lean mode.")
+- The section MUST include a remediation path: how to run the skipped analysis (e.g., `/investigate --iterate <CASE-ID> hypothesis`)
+
+This applies to all sections including but not limited to: Competing Hypotheses Assessment, Sensitivity Analysis, Self-Correction Summary, Limitations and Caveats, Audit Trail, and Citations.
+
+#### Report Generation Steps
+
 1. Read `synthesis.json` and `corrections/validation-summary.json`
-2. Generate the investigation report using `templates/investigation-report.md`
+2. Generate the investigation report using `templates/investigation-report.md` — populate ALL sections, using "Not performed" explanations for any section whose phase did not execute
 3. Generate machine-readable findings using `templates/finding-template.json`
 4. Generate accuracy self-assessment using `templates/accuracy-report.md`
 5. Write all outputs to `report/` directory
@@ -264,9 +277,11 @@ Execute a minimal investigation with only the highest-value techniques:
 2. Phase 2 (Triage) — always
 3. Phase 3 (Deep Analysis) — **only**: `timeline` + `persistence`
 4. Phase 5 (Self-Correction) — Layer 1 only (artifact existence validation)
-5. Phase 6 (Reporting) — abbreviated report
+5. Phase 6 (Reporting) — **full standardized report** (see Report Standardization Rule)
 
 Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is constrained.
+
+> **Note**: Although phases may be skipped in lean mode, the final report always includes all sections. Skipped sections state why they were not performed and how to run them (see Report Standardization Rule).
 
 ---
 

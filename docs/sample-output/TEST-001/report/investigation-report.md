@@ -1,8 +1,11 @@
 # Investigation Report: TEST-001
 
 **Date**: 2026-04-13
+
 **Examiner**: VALKYRIE (Autonomous IR Agent)
+
 **Classification**: APT — Compromised Enterprise Workstation
+
 **Status**: COMPLETE (memory analysis only)
 
 ---

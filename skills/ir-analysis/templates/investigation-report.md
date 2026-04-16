@@ -1,8 +1,11 @@
 # Investigation Report: {{CASE_ID}}
 
 **Date**: {{REPORT_DATE}}
+
 **Examiner**: {{EXAMINER_NAME}}
+
 **Classification**: {{CLASSIFICATION}}
+
 **Status**: {{STATUS}}
 
 ---
@@ -68,11 +71,19 @@
 
 **Eliminated Hypotheses**: {{ELIMINATED}}
 
+{{#ELSE}}
+
+**Not performed.** {{HYPOTHESIS_SKIP_REASON}}
+
+To run hypothesis testing on this case, use: `/investigate --iterate {{CASE_ID}} hypothesis`
+
 {{/IF}}
 
 ---
 
 ## Sensitivity Analysis
+
+{{#IF HYPOTHESIS_TESTING_RAN}}
 
 What would change the conclusion:
 
@@ -82,6 +93,12 @@ What would change the conclusion:
 | **If that evidence is wrong** | {{IMPACT_IF_WRONG}} |
 | **What would refute the conclusion** | {{REFUTATION_EVIDENCE}} |
 | **Linchpin assumptions** | {{LINCHPIN_ASSUMPTIONS}} |
+
+{{#ELSE}}
+
+**Not performed.** Sensitivity analysis requires hypothesis testing (Phase 4). {{HYPOTHESIS_SKIP_REASON}}
+
+{{/IF}}
 
 ---
 
@@ -133,6 +150,8 @@ Each finding traces back to a specific tool execution. To independently verify a
 
 ## Self-Correction Summary
 
+{{#IF SELF_CORRECTION_RAN}}
+
 {{SELF_CORRECTION_NARRATIVE}}
 
 ### Corrections Applied
@@ -152,6 +171,14 @@ Each finding traces back to a specific tool execution. To independently verify a
 **Total corrections**: {{TOTAL_CORRECTIONS}}
 **Findings removed**: {{FINDINGS_REMOVED}}
 **Confidence downgrades**: {{CONFIDENCE_DOWNGRADES}}
+
+{{#ELSE}}
+
+**Not performed.** {{SELF_CORRECTION_SKIP_REASON}}
+
+To run self-correction on this case, use: `/investigate --iterate {{CASE_ID}}`
+
+{{/IF}}
 
 ---
 

@@ -142,6 +142,17 @@ Every finding includes its evidence tier and citation:
 
 The tier is determined by which pipeline phase produced the finding: Phase 3 → Tier 1, Phase 4 → Tier 2 or 3.
 
+## Report Standardization Rule
+
+**Every investigation report MUST include ALL sections defined in `templates/investigation-report.md`, regardless of mode, evidence type, or phases executed.** The report structure is identical every time — no sections are ever omitted.
+
+When a section's corresponding phase or technique was not executed, the section MUST:
+1. Still appear with its heading
+2. State **"Not performed."** followed by a specific reason (e.g., which phase was skipped and why)
+3. Include a remediation path (e.g., `/investigate --iterate <CASE-ID> hypothesis`)
+
+This ensures operational consistency for IR/IM workflows — the report consumer always knows what to expect and can immediately see what analysis remains to be done.
+
 ## Citation Requirement
 
 Every claim in every artifact must be cited. No exceptions. Citation formats:
