@@ -70,7 +70,37 @@ Check for scheduled tasks:
 Check for WMI event subscriptions:
 - `Windows\System32\wbem\Repository\` — WMI database files (complex to parse; flag if recently modified)
 
-#### 3.4 Service Analysis
+#### 3.4 Advanced Persistence Mechanisms
+
+These persistence methods are favored by sophisticated adversaries (including AI-driven ones) because they avoid the well-monitored Run keys and service installations:
+
+1. **COM/CLSID Hijacking** (T1546.015):
+   - Check `HKCU\Software\Classes\CLSID\` for entries that override system COM objects
+   - Use `get_registry_key()` to enumerate user-writable CLSID entries
+   - Cross-reference with `HKLM\Software\Classes\CLSID\` — if a CLSID exists in both HKCU and HKLM, the HKCU entry takes precedence and may represent a hijack
+   - Flag CLSIDs that point to DLLs in unusual locations (`\Temp\`, `\AppData\`, `\Users\Public\`)
+
+2. **DLL Search Order Hijacking** (T1574.001):
+   - For each service and persistence entry pointing to an executable: check if the executable's directory contains DLLs that shadow system DLLs
+   - Use `list_files()` to enumerate the directory of each suspicious executable
+   - Flag if DLL names match known frequently-hijacked system DLLs (`version.dll`, `dbghelp.dll`, `dwmapi.dll`, `uxtheme.dll`, `winmm.dll`, `cryptsp.dll`) but are located outside `System32`
+
+3. **WMI Event Subscription Persistence** (T1546.003):
+   - Check for recently modified WMI repository files in `Windows\System32\wbem\Repository\`
+   - Use `list_files()` to get modification timestamps of `OBJECTS.DATA`, `INDEX.BTR`, `MAPPING*.MAP`
+   - If modification timestamps fall within the incident timeline: flag as potential WMI persistence
+   - Cross-reference with Event ID 5861 (WMI activity) in log analysis if available
+   - WMI persistence is difficult to parse from static disk analysis — flag the temporal correlation rather than attempting binary format parsing
+
+4. **Environment Variable Injection** (T1574.007 / T1574.008):
+   - Check `HKCU\Environment` and `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment` for PATH modifications
+   - Flag if PATH entries include unusual directories, especially early in the PATH before `System32`
+   - Check for `PATHEXT` modifications that add unusual executable extensions (e.g., `.txt`, `.log`)
+   - An attacker adding `.txt` to PATHEXT and placing a PE binary with `.txt` extension can achieve execution when users open "text" files
+
+Add these to the `persistence_entries` array with appropriate MITRE ATT&CK technique IDs.
+
+#### 3.5 Service Analysis
 
 For entries from the SYSTEM hive Services key:
 1. Focus on services with `Start` type 2 (Auto) or 3 (Manual) that have unusual binary paths
@@ -132,6 +162,7 @@ Pass to:
 - **artifact-correlation**: Suspicious executables and their paths for cross-reference with timeline and memory
 - **hypothesis-testing**: Persistence mechanisms as evidence for/against attack hypotheses
 - **timeline-reconstruction**: Persistence creation timestamps
+- **ai-adversary-analysis**: Advanced persistence mechanisms (COM hijacking, DLL search order, WMI subscriptions, env var injection) for sophisticated adversary profiling
 
 ---
 

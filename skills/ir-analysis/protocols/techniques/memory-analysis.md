@@ -74,7 +74,26 @@ Invoke `analyze_memory(plugin="banners")` to identify the OS build. The banners 
    - Flag: established connections to external IPs from system processes
 3. Record all external IPs as potential IOCs
 
-#### 3.5 Cross-Reference with Disk Artifacts
+#### 3.5 Legitimate Service Abuse & AI-Tool Detection
+
+Check for indicators that legitimate Windows services or AI tools are being abused as execution proxies — patterns common in API-based and AI-assisted attacks (ref: GTIG PROMPTFLUX/PROMPTSTEAL families, MITRE ATLAS AML.T0096).
+
+1. **BITS job abuse**: Check for `bitsadmin.exe` or `svchost.exe -k netsvcs` (BITS service host) with unusual network connections via netscan. Cross-reference with timeline for BITS transfer job creation events. BITS can download executables silently without triggering standard download monitoring.
+
+2. **COM/DCOM hijacking**: Use `analyze_memory(plugin="handles")` on `svchost.exe` processes to look for handles to unusual COM objects. Check `dlllist` for DLLs loaded from non-standard paths in COM server processes. Known execution proxy CLSIDs: `MMC20.Application`, `ShellWindows`, `ShellBrowserWindow`.
+
+3. **WMI provider abuse**: Check for `wmiprvse.exe` processes with child processes — WMI provider hosts should not normally spawn children. Use `cmdline` to examine WMI provider host command lines for unusual arguments.
+
+4. **In-process execution patterns**: Identify processes where `malfind` detects injected code but the process itself is a legitimate Windows binary running from the correct path with no child processes. This pattern (legitimate binary + injected code + no children) suggests in-process execution to avoid spawning detectable processes.
+
+5. **LLM API artifacts in process memory**: For suspicious processes, use `extract_strings` on dumped process memory and search for:
+   - API endpoint strings: `api.openai.com`, `generativelanguage.googleapis.com`, `api-inference.huggingface.co`
+   - API key patterns: strings starting with `sk-`, `AIza`, `hf_`
+   - Known AI malware markers: `thinking_robot_log` (PROMPTFLUX), `Programdata\info` directory references (PROMPTSTEAL)
+   - Prompt residue: `Return only commands, without markdown`, `[citation:` markers
+   - These artifacts indicate the malware is using LLM APIs at runtime for dynamic command generation or code obfuscation (per GTIG AI Threat Tracker, Nov 2025)
+
+#### 3.6 Cross-Reference with Disk Artifacts
 
 For each suspicious process found in memory:
 1. Does a matching executable exist on disk? (Check against timeline/MFT if available)
@@ -144,6 +163,7 @@ Pass to:
 - **artifact-correlation**: Suspicious PIDs and file paths for disk cross-reference
 - **hypothesis-testing**: Process anomalies and network connections as evidence
 - **timeline-reconstruction**: Process creation timestamps for timeline alignment
+- **ai-adversary-analysis**: Legitimate service abuse and LLM API indicators for API-based attack scoring
 
 ---
 

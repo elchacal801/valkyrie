@@ -102,6 +102,38 @@ What would change the conclusion:
 
 ---
 
+## AI-Adversary Assessment
+
+{{#IF AI_ADVERSARY_RAN}}
+
+**Composite AI-Adversary Likelihood**: {{AI_LIKELIHOOD_SCORE}} ({{AI_CLASSIFICATION}})
+**Confidence**: {{AI_CONFIDENCE}}
+
+| Analytical Lens | Score | Key Indicators |
+|----------------|-------|----------------|
+| Behavioral Entropy (Temporal) | {{TEMPORAL_SCORE}} | {{TEMPORAL_INDICATORS}} |
+| Credential Automation | {{CREDENTIAL_SCORE}} | {{CREDENTIAL_INDICATORS}} |
+| LOLBin Chain Analysis | {{LOLBIN_SCORE}} | {{LOLBIN_INDICATORS}} |
+| API-Based Attack Indicators | {{API_SCORE}} | {{API_INDICATORS}} |
+| Absence-of-Evidence | {{ABSENCE_SCORE}} | {{ABSENCE_INDICATORS}} |
+| Decoy Artifact Detection | {{DECOY_SCORE}} | {{DECOY_INDICATORS}} |
+
+{{AI_ASSESSMENT_NARRATIVE}}
+
+**Threat Intelligence References**: {{THREAT_INTEL_REFS}}
+
+**Caveat**: {{AI_CAVEAT}}
+
+{{#ELSE}}
+
+**Not performed.** {{AI_ADVERSARY_SKIP_REASON}}
+
+To run AI-adversary analysis on this case, use: `/investigate --iterate {{CASE_ID}} ai-adversary`
+
+{{/IF}}
+
+---
+
 ## Audit Trail — How to Verify Each Finding
 
 Each finding traces back to a specific tool execution. To independently verify any finding:

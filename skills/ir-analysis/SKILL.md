@@ -24,7 +24,7 @@ Conduct structured forensic investigations using techniques adapted from intelli
 /investigate --no-enrich                        → Disable IOC enrichment / threat intel lookup
 ```
 
-Techniques: `timeline`, `correlation`, `hypothesis`, `memory`, `persistence`, `logs`, `malware`, `ioc-enrich`, `lateral`, `root-cause`
+Techniques: `timeline`, `correlation`, `hypothesis`, `memory`, `persistence`, `logs`, `malware`, `ai-adversary`, `ioc-enrich`, `lateral`, `root-cause`
 
 Flags combine: `/investigate --guided --lean --evidence-path /cases/001/evidence` is valid.
 
@@ -218,5 +218,6 @@ Forensic investigations can generate massive tool output. Follow these rules to 
 | `persistence` | `protocols/techniques/persistence-enumeration.md` | `analysis/persistence-enumeration.json` | Deep Analysis |
 | `logs` | `protocols/techniques/log-analysis.md` | `analysis/log-analysis.json` | Deep Analysis |
 | `malware` | `protocols/techniques/malware-triage.md` | `analysis/malware-triage.json` | Deep Analysis |
+| `ai-adversary` | `protocols/techniques/ai-adversary-analysis.md` | `analysis/ai-adversary-analysis.json` | Correlation |
 
 All paths are relative to the skill directory (`skills/ir-analysis/`).

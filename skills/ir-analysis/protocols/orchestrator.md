@@ -44,6 +44,7 @@ Flags combine with modes: `--guided --lean --evidence-path /cases/001/evidence` 
 | `persistence` | `protocols/techniques/persistence-enumeration.md` | `analysis/persistence-enumeration.json` | Deep Analysis | Disk image |
 | `logs` | `protocols/techniques/log-analysis.md` | `analysis/log-analysis.json` | Deep Analysis | Log files (.evtx) |
 | `malware` | `protocols/techniques/malware-triage.md` | `analysis/malware-triage.json` | Deep Analysis | Suspicious files |
+| `ai-adversary` | `protocols/techniques/ai-adversary-analysis.md` | `analysis/ai-adversary-analysis.json` | Correlation | 2+ Phase 3 outputs |
 
 All paths are relative to the skill directory (`skills/ir-analysis/`).
 
@@ -97,6 +98,24 @@ After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess
 | Unknown / mixed | Use `--guided` mode, inventory first |
 
 **Rule**: When 2+ evidence types are present, ALWAYS include `correlation` and `hypothesis` — these produce Tier 2 and Tier 3 findings and demonstrate analytical reasoning (Criterion #1).
+
+### AI-Adversary Auto-Selection Triggers
+
+The `ai-adversary` technique is automatically added to the selected techniques when ANY of the following conditions are detected during Phase 2 (Triage) or Phase 3 (Deep Analysis):
+
+| Trigger | Detection Method | Confidence |
+|---|---|---|
+| Sub-minute activity cluster (5+ suspicious events in 60s) | Phase 2 triage timeline scan | HIGH |
+| Same credential on 3+ systems within 5 minutes | Phase 2 log scan (Event ID 4624) | HIGH |
+| LOLBin chain detected (3+ legitimate tools in sequence) | Phase 2 process/cmdline scan | MEDIUM |
+| Zero YARA matches on clearly suspicious files | Phase 3 malware-triage output | MEDIUM |
+| WMI/COM/BITS activity during incident window | Phase 2 triage | LOW |
+| LLM API artifacts in strings output | Phase 3 technique outputs | HIGH |
+| Any Phase 3 technique flags `ai_tempo` anomalies | Phase 3 timeline/memory outputs | HIGH |
+
+When no triggers fire, `ai-adversary` is NOT auto-selected (to avoid unnecessary analysis on clearly human-operated incidents). It can always be explicitly requested via `/investigate ai-adversary` or `/investigate --iterate <case-id> ai-adversary`.
+
+When AI-adversary triggers are detected during Phase 2, `ai-adversary` is added to all evidence combinations that include 2+ Tier 1 technique outputs.
 
 ---
 
@@ -259,7 +278,7 @@ This applies to all sections including but not limited to: Competing Hypotheses 
 
 ## Direct Mode
 
-1. Look up technique in the routing table. If not found, respond with: "Unknown technique '{{INPUT}}'. Valid techniques: `timeline`, `correlation`, `hypothesis`, `memory`, `persistence`, `logs`, `malware`." — then stop.
+1. Look up technique in the routing table. If not found, respond with: "Unknown technique '{{INPUT}}'. Valid techniques: `timeline`, `correlation`, `hypothesis`, `memory`, `persistence`, `logs`, `malware`, `ai-adversary`." — then stop.
 2. Create case directory (if not already created)
 3. Run Phase 1 (Evidence Inventory) if `inventory.json` doesn't exist
 4. Check that the required evidence type is available for the requested technique
@@ -335,7 +354,9 @@ Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is c
 | Tier | Techniques | Dependencies | Dispatch |
 |------|-----------|-------------|----------|
 | 1 (Independent) | timeline, memory, persistence, logs, malware | `inventory.json` + `triage.json` | Parallel subagents |
-| 2 (Dependent) | correlation, hypothesis | ALL Tier 1 outputs in `analysis/` | Parallel subagents (after Tier 1 completes) |
+| 2 (Dependent) | correlation, hypothesis, ai-adversary | ALL Tier 1 outputs in `analysis/` | Parallel subagents (after Tier 1 completes) |
+
+> **Note on ai-adversary placement**: The ai-adversary technique consumes all Tier 1 outputs and benefits from reading `artifact-correlation.json` (decoy candidates, absence indicators). For v1, it runs in parallel with correlation and hypothesis (Option A — simpler orchestration). A future optimization (Option B) would sequence it after correlation for richer input.
 
 Within each tier, techniques run in parallel. The orchestrator waits for all Tier 1 subagents to complete before dispatching Tier 2.
 

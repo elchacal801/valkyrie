@@ -41,6 +41,7 @@ Generate at least 4 hypotheses, always including these standard alternatives:
 | H3 | **Insider threat** | An authorized user misused their access for unauthorized purposes. Indicators: legitimate credentials, normal working hours, access to specific data. |
 | H4 | **Legitimate activity (null hypothesis)** | The observed artifacts are the result of normal system administration, software updates, or authorized security testing. This MUST be genuinely considered. |
 | H5 | **Red team / penetration test** | The observed activity is from an authorized security assessment. Indicators: testing tools (Cobalt Strike, Metasploit), limited scope, specific timeframe. |
+| H6 | **AI-assisted attack** | The observed activity was orchestrated by an AI agent (autonomous or human-directed). Indicators: sub-minute kill chain completion, parallel credential use across systems, API-only execution without interactive shells, LOLBin chains executed faster than human typing speed, abnormally clean forensic footprint (expected artifacts missing), LLM API artifacts in process memory (ref: GTIG PROMPTFLUX/PROMPTSTEAL families). |
 
 Add case-specific hypotheses based on the evidence (e.g., "supply chain compromise via trojanized update" if software update artifacts are suspicious).
 
@@ -92,11 +93,37 @@ Identify evidence items that, if reinterpreted or removed, would change the conc
 - If that evidence were wrong (Layer 1 catches a hallucinated artifact), would the conclusion change?
 - Are there any "linchpin" assumptions that the entire analysis rests on?
 
-#### 3.6 Define Future Indicators
+#### 3.6 AI-Adversary Hypothesis Evaluation (H6)
+
+When H6 is included (include it when `analysis/ai-adversary-analysis.json` exists, when ai-adversary triggers fired during triage, or when evidence shows sub-minute activity patterns), apply these specific diagnostic criteria:
+
+| Diagnostic Criterion | Evidence Source | Rating Guide |
+|---|---|---|
+| Sub-minute kill chain phase transitions | timeline-reconstruction anomalies (`ai_tempo`, `sub_minute_cluster`) | **C** if present; **N** if no temporal data |
+| Parallel operations on same system | timeline-reconstruction anomalies (`parallel_ops`) | **C** if detected; **N** if not |
+| Same credential on 3+ systems within 60s | log-analysis authentication events | **C** if present; **I** if sequential credential use observed |
+| LOLBin chain executed in < 10 seconds | timeline + log-analysis process events | **C** if present; **N** if no LOLBin activity |
+| Execution without process creation (API-only) | memory-analysis + log-analysis | **C** if present; **N** if no evidence |
+| Expected artifacts missing (absence ratio > 0.6) | artifact-correlation `absence_indicators` | **C** if present; **I** if rich artifact trail exists |
+| Evidence corroboration count > 5 (decoy indicator) | artifact-correlation `decoy_candidates` | **C** if present; **N** if normal corroboration |
+| Interactive shell lineage in process tree | memory-analysis process tree | **I** if present (humans use shells); **N** if no data |
+| Variable inter-event timing (CV > 0.3) | timeline-reconstruction | **I** if present (human timing); **N** if no data |
+| Tool errors / backtracking in command history | log-analysis / memory cmdline | **I** if present (humans make mistakes); **N** if no data |
+
+**Key discriminators between H6 and other hypotheses:**
+- **H6 vs H1 (APT)**: APTs operate at human speed with interactive shells, showing decision-making pauses and tool errors. H6 is machine-speed, API-driven, with no pauses.
+- **H6 vs H2 (Malware)**: Commodity malware follows fixed scripts (same behavior every execution). H6 shows adaptive behavior — different actions on different systems based on reconnaissance context.
+- **H6 vs H5 (Red Team)**: Red teams use known C2 frameworks (Cobalt Strike beacons, Metasploit sessions). H6 uses legitimate tools exclusively (LOLBin chains) with no known C2 framework signatures, or uses LLM API-driven command generation (GTIG PROMPTSTEAL pattern).
+
+#### 3.7 Define Future Indicators
 
 For the leading hypothesis, define observable events that would:
 - **Confirm**: What additional evidence would strengthen this conclusion? (e.g., "If we found the C2 infrastructure IP in threat intel feeds as APT-X")
 - **Refute**: What evidence would disprove this conclusion? (e.g., "If the 'custom tool' turns out to be a legitimate admin utility")
+
+For H6 specifically:
+- **Confirm H6**: Command execution shows no typing delays, no tab-completion artifacts, no typos/corrections across the entire kill chain; LLM API endpoints or hardcoded API keys found in process memory; `[citation:N]` code artifacts found in malware (DeepSeek signature); identical attack pattern executed across multiple systems with no variation
+- **Refute H6**: Interactive shell session detected with variable timing; backspace/correction patterns in command history; known human C2 framework (Cobalt Strike interactive session, Metasploit console); attack paused during off-hours and resumed (human sleep cycle)
 
 ### 4. ARTIFACT
 

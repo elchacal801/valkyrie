@@ -100,6 +100,24 @@ Across all analyzed logs, look for:
 4. **Log gaps**: Missing time ranges that could indicate log clearing between 1102 events
 5. **Off-hours activity**: Authentication events outside normal business hours for the organization's timezone
 
+#### 3.5 Credential Frequency & Automation Analysis
+
+Analyze authentication events for patterns indicating automated or AI-driven credential use. This analysis is informed by agentic AI threat research (Barracuda Agentic AI Report 2026, GTIG AI Threat Tracker) which documents AI agents performing lateral movement at machine speed.
+
+1. **Credential velocity analysis**: For each account appearing in successful logon events (4624), compute:
+   - Number of distinct target systems (by target hostname or IP in the event)
+   - Time span from first to last logon for that account
+   - Velocity = distinct systems / time span (minutes)
+   - **Flag if velocity > 3 systems/minute** — humans cannot authenticate to 3+ systems per minute manually (need to type credentials, navigate interfaces, establish sessions)
+
+2. **Parallel credential detection**: Identify cases where the same account has overlapping authentication sessions — logon events within 5 seconds of each other on different target systems. Humans authenticate sequentially (finish one system, move to next). Parallel authentication on multiple systems simultaneously indicates programmatic credential use or pass-the-hash/pass-the-ticket automation.
+
+3. **Logon type consistency**: For each account showing lateral movement, compute the distribution of logon types (2=interactive, 3=network, 10=RDP). Flag if 100% of logons are type 3 (network) with zero interactive or RDP logons — this suggests API/tool-driven access with no human interactive session at any point.
+
+4. **Authentication pattern regularity**: Compute inter-authentication intervals for accounts moving laterally. If intervals show mechanical regularity (CV < 0.15), the credential use follows an automated pattern rather than human decision-making.
+
+Add these to the `patterns_detected` array with type `credential_automation`. Include the computed metrics (velocity, CV, logon type distribution) as evidence for downstream techniques.
+
 ### 4. ARTIFACT
 
 Write `analysis/log-analysis.json`:
@@ -144,6 +162,7 @@ Pass to:
 - **artifact-correlation**: Authentication events with timestamps for cross-reference against timeline and memory
 - **hypothesis-testing**: Lateral movement and privilege escalation evidence for competing hypotheses
 - **timeline-reconstruction**: Event timestamps for consolidated timeline
+- **ai-adversary-analysis**: Credential automation patterns (velocity, parallel auth, logon type consistency) for credential automation scoring
 
 ---
 

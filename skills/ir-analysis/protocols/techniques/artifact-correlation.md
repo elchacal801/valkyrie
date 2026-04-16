@@ -82,6 +82,34 @@ Using corroborated findings, construct the timeline of the attack:
 
 Not all kill chain phases will have corroborated findings. Document gaps.
 
+#### 3.6 Decoy Artifact Detection
+
+For each finding in the correlation matrix, count the number of SUPPORTS ratings across all techniques:
+
+- **Normal corroboration** (2–4 sources): Expected for real incidents. Promote to Tier 2 as usual.
+- **High corroboration** (5+ sources supporting the same finding): Flag as potential decoy. In real incidents, evidence is messy — it is statistically unusual for a single artifact to be corroborated by 5+ independent sources. An AI adversary (or sophisticated human) may deliberately plant artifacts across multiple evidence locations to create a convincing but false trail.
+
+Record flagged findings in a `decoy_candidates` array in the artifact output. Do NOT automatically reclassify — flag for review by the ai-adversary-analysis technique.
+
+#### 3.7 Absence-of-Evidence Correlation
+
+For each kill chain phase in the cross-source attack narrative (section 3.5), check whether expected supporting artifacts are present:
+
+| Kill Chain Phase | Expected Artifacts (check 2–4) |
+|---|---|
+| Execution | Prefetch file, Amcache entry, shimcache entry, MFT record |
+| Persistence | Referenced executable on disk, MFT entry for file, shimcache for file |
+| Lateral movement | Source process creation on origin system, netscan connection in memory |
+| C2 communication | DNS resolution event, process with connection, firewall/network log |
+| Data staging/exfil | File access timestamps, staging directory, archive/compression artifacts |
+
+For each phase:
+- Record expected vs. found artifact counts
+- Compute `absence_ratio` = (expected − found) / expected
+- Add phases with absence_ratio > 0.5 to an `absence_indicators` array
+
+**Absence is NOT an error** — it is an investigative signal. A phase with execution evidence but no prefetch/amcache suggests fileless execution or anti-forensic cleanup. This data feeds the ai-adversary-analysis technique's absence-of-evidence scoring.
+
 ### 4. ARTIFACT
 
 Write `analysis/artifact-correlation.json` to the case directory:
@@ -141,7 +169,24 @@ Write `analysis/artifact-correlation.json` to the case directory:
     "lateral_movement": {"description": "...", "evidence": [...], "confidence": "..."},
     "collection_exfiltration": {"description": "...", "evidence": [...], "confidence": "..."},
     "gaps": ["No evidence for privilege escalation phase"]
-  }
+  },
+  "decoy_candidates": [
+    {
+      "finding_subject": "...",
+      "corroboration_count": 6,
+      "supporting_sources": ["..."],
+      "flag_reason": "Unusually high corroboration count (6 sources)"
+    }
+  ],
+  "absence_indicators": [
+    {
+      "kill_chain_phase": "execution",
+      "expected_artifacts": ["prefetch", "amcache", "shimcache"],
+      "found_artifacts": ["prefetch"],
+      "absence_ratio": 0.67,
+      "investigative_significance": "Possible fileless execution — 2/3 expected artifacts absent"
+    }
+  ]
 }
 ```
 
@@ -167,6 +212,7 @@ Pass to:
 - **hypothesis-testing**: Corroborated findings and contradictions as evidence for competing hypotheses
 - **self-correction (Layer 3)**: Attack narrative for analytical coherence validation
 - **reporting**: Tier 2 findings for the investigation report
+- **ai-adversary-analysis**: Decoy candidates and absence indicators for decoy scoring and absence-of-evidence analysis
 
 ---
 

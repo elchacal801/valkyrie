@@ -86,7 +86,21 @@ Scan the consolidated timeline for:
    - Log gaps that could indicate log clearing
    - Missing log files that should exist (e.g., Security.evtx missing)
 
-#### 3.5 Establish Investigation Bounds
+#### 3.5 AI-Adversary Temporal Indicators
+
+Scan the consolidated timeline for patterns associated with automated or AI-driven operations. These checks are informed by real-world AI attack observations (GTIG AI Threat Tracker, Barracuda Agentic AI Report 2026).
+
+1. **Sub-minute event clustering**: Identify clusters where 5+ distinct suspicious events occur within a 60-second window. Human operators rarely execute 5 distinct actions in under a minute — they need to read output, evaluate results, and decide next steps. Record each cluster with its event count, time span, and event types.
+
+2. **"Too-regular" interval detection**: For each cluster of 3+ sequential suspicious events, compute the inter-event intervals and their coefficient of variation (CV = standard deviation / mean). Flag clusters where CV < 0.15 — this indicates metronomic timing inconsistent with human operation. Humans show CV > 0.30 due to variable reaction times and decision pauses.
+
+3. **Behavioral entropy check**: Assess suspicious activity clusters spanning > 5 minutes. Flag if the cluster contains no pauses > 30 seconds — sustained, evenly-paced activity without reading/decision pauses suggests automated or AI-driven execution. Human attacks show bursty patterns (intense activity → pause for recon → activity).
+
+4. **Parallelized event detection**: Identify cases where two or more causally independent suspicious events occur within a 5-second window on the same system (e.g., file creation in directory A and registry modification in hive B simultaneously). Humans operate serially; parallel operations suggest programmatic execution.
+
+Add these to the `anomalies` array in the artifact output with the following type values: `ai_tempo`, `sub_minute_cluster`, `regular_interval`, `parallel_ops`.
+
+#### 3.6 Establish Investigation Bounds
 
 Determine:
 - **T0 (First suspicious activity)**: The earliest timestamp associated with a suspicious artifact. Must be supported by at least one Tier 1 citation.
@@ -166,6 +180,7 @@ Pass to downstream techniques:
 - **Temporal anomalies** — used by hypothesis-testing to evaluate anti-forensics hypothesis
 - **Suspicious file paths** — used by memory-analysis and persistence-enumeration to focus their searches
 - **Key timestamps** — used by artifact-correlation for cross-source timeline alignment
+- **AI-adversary temporal indicators** — used by ai-adversary-analysis technique for behavioral entropy scoring
 
 ---
 

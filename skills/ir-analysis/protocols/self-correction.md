@@ -168,6 +168,23 @@ For each finding in `synthesis.json` and all `analysis/*.json` files:
   - "Have you ruled out the red team / penetration test scenario?"
 - If a plausible challenge cannot be answered with evidence: downgrade confidence
 
+#### 3.7 "Too-Perfect Evidence" Detection
+
+Check for evidence that is suspiciously clean — a hallmark of either fabricated evidence or an adversary that deliberately plants artifacts to create a false trail. This check is particularly relevant when investigating AI-driven attacks (ref: ai-adversary-analysis protocol, decoy artifact detection lens).
+
+1. **Zero contradictions + high corroboration**: Read `artifact-correlation.json`. If the `contradictions` array is empty AND the average corroboration count across all findings is ≥ 3.0, flag as anomalous. Real incidents almost always produce at least one contradiction or unexplained artifact.
+
+2. **Complete kill chain + no gaps**: Read the `attack_narrative` in `artifact-correlation.json` or `synthesis.json`. If every kill chain phase has corroborated evidence and the `gaps` array is empty, flag. Real incidents rarely have evidence for every kill chain phase — some phases are always obscured by anti-forensics, log gaps, or evidence collection scope.
+
+3. **No orphan findings**: If `artifact-correlation.json` has zero orphan findings (every finding from every technique was corroborated), flag. In practice, some findings always remain single-source.
+
+4. **Uniform confidence**: If all findings are HIGH confidence with no MEDIUM or LOW confidence findings, flag. Real forensic analysis always produces some uncertain findings — a uniformly confident narrative suggests the analyst (or the evidence) is too certain.
+
+If any of these conditions are met:
+- Log a detection record with severity MEDIUM
+- Add a note to the validation summary: "Evidence pattern analysis suggests unusually clean evidence. This may indicate: (a) a well-instrumented system that captured comprehensive artifacts, (b) a straightforward incident with clear evidence, or (c) deliberately planted evidence designed to create a convincing narrative. Recommend review by ai-adversary-analysis technique if not already run."
+- If `analysis/ai-adversary-analysis.json` does not exist: recommend the orchestrator add the ai-adversary technique in the next iteration
+
 ### Layer 3 Severity Classification
 
 | Issue | Severity | Action |
@@ -178,6 +195,7 @@ For each finding in `synthesis.json` and all `analysis/*.json` files:
 | Confidence miscalibration | MEDIUM | Adjust confidence level |
 | No alternative hypotheses considered | HIGH | Run hypothesis-testing technique |
 | Cannot answer senior analyst challenge | MEDIUM | Downgrade confidence, add caveat |
+| Too-perfect evidence pattern | MEDIUM | Flag for ai-adversary-analysis review; add caveat to report |
 
 ---
 
