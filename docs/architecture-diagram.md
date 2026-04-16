@@ -10,7 +10,7 @@
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                VALKYRIE Skill Framework                    │  │
 │  │                                                           │  │
-│  │  SKILL.md ──► Orchestrator ──► 7 Technique Protocols      │  │
+│  │  SKILL.md ──► Orchestrator ──► 8 Technique Protocols      │  │
 │  │  /investigate    │                                        │  │
 │  │                  ├─► Evidence Collector                    │  │
 │  │                  ├─► Self-Correction (3 layers)            │  │
@@ -21,7 +21,7 @@
 │  │  │  timeline-reconstruction  │  artifact-correlation    │  │  │
 │  │  │  hypothesis-testing       │  memory-analysis         │  │  │
 │  │  │  persistence-enumeration  │  log-analysis            │  │  │
-│  │  │  malware-triage                                      │  │  │
+│  │  │  malware-triage           │  ai-adversary-analysis   │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                              │                                   │
@@ -215,7 +215,7 @@ Combined with **Claude Code as Direct Agent Extension** (Pattern 2), this create
 - **Custom MCP Server**: Safety enforcement, tool wrapping, data translation, audit logging
 - **Skill Framework**: Analytical methodology, self-correction, evidence tiering, reporting
 
-The analytical complexity lives in the skill framework (markdown protocols), not in the MCP server (Python code). The MCP server is deliberately lean — 5 tool modules, ~1500 lines of Python. The skill framework is where the intellectual work happens — 7 technique protocols, orchestrator, self-correction, evidence collector, 5 templates.
+The analytical complexity lives in the skill framework (markdown protocols), not in the MCP server (Python code). The MCP server is deliberately lean — 5 tool modules, ~1500 lines of Python. The skill framework is where the intellectual work happens — 8 technique protocols (including AI-adversary detection), orchestrator, self-correction, evidence collector, 5 templates.
 
 ---
 

@@ -84,7 +84,7 @@ Claude Code (reasoning engine)
 VALKYRIE Skill Framework (/investigate command)
     ├── Orchestrator (6-phase IR pipeline)
     ├── Self-Correction (3 forensic validation layers)
-    ├── 7+ Technique Protocols (IR-adapted SATs)
+    ├── 8 Technique Protocols (IR-adapted SATs + AI-adversary detection)
     └── Templates & Reporting
     │
 Claude Code Hooks (evidence protection + audit logging)
@@ -169,7 +169,7 @@ VALKYRIE handles real-world tool failures gracefully:
 |-----------|--------------|
 | **#1 Autonomous Execution** (tiebreaker) | Run `/investigate --guided` — 6 phases execute without human input. See `skills/ir-analysis/SKILL.md` |
 | **#2 IR Accuracy** | [`docs/accuracy-report.md`](docs/accuracy-report.md) — 19 findings, 0 hallucinations, 2 self-corrections |
-| **#3 Breadth & Depth** | 7 technique protocols, 11 MCP tools, 17 Volatility plugins. See `skills/ir-analysis/protocols/` |
+| **#3 Breadth & Depth** | 8 technique protocols (incl. AI-adversary detection), 11 MCP tools, 17 Volatility plugins. See `skills/ir-analysis/protocols/` |
 | **#4 Constraint Implementation** | [`docs/architecture-diagram.md`](docs/architecture-diagram.md) — 5 architectural layers, 46 unit tests |
 | **#5 Audit Trail** | `logs/tool-execution.jsonl` in every case directory. Every finding cites `[TOOL: name, evidence, detail]` |
 | **#6 Usability** | One-command install, `CLAUDE.md` project guide, fallback strategies documented |
@@ -178,7 +178,8 @@ VALKYRIE handles real-world tool failures gracefully:
 
 VALKYRIE's analytical reasoning framework is inspired by [Blevene/structured-analysis-skill](https://github.com/Blevene/structured-analysis-skill) (Apache 2.0), which implements CIA/IC Structured Analytic Techniques. The novel contributions are:
 
-- **IR-specific technique library** — 7+ forensic techniques (timeline reconstruction, artifact correlation, ACH-adapted hypothesis testing, memory analysis, persistence enumeration, log analysis, malware triage)
+- **IR-specific technique library** — 8 forensic techniques (timeline reconstruction, artifact correlation, ACH-adapted hypothesis testing, memory analysis, persistence enumeration, log analysis, malware triage, AI-adversary analysis)
+- **AI-adversary detection** — First IR agent to reason about AI-driven attacks as a distinct threat category, grounded in GTIG, MITRE ATLAS v5.4.0, Arctic Wolf, and Unit42 threat intelligence. Six analytical lenses: behavioral entropy, credential automation, LOLBin chaining, API-based attacks, absence-of-evidence, and decoy artifact detection
 - **Forensic self-correction** — Three-layer validation (artifact existence, temporal consistency, analytical coherence) catching IR-specific hallucination patterns
 - **Custom MCP server** — 11 typed functions with denylist enforcement, SHA256 audit logging, ISF symbol auto-resolution, controlled process memory dump, FLOSS-first string extraction
 - **Evidence tiering** — Distinguishing confirmed findings from analytical inferences with explicit confidence scoring

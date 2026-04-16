@@ -60,7 +60,7 @@ VALKYRIE conducts autonomous incident response investigations on SIFT Workstatio
 
 **Custom MCP Server** (Python, stdio transport): 12 forensic tools wrapping SleuthKit (mmls, fls, icat), Volatility 3 (17 plugins), Plaso (log2timeline), YARA, FLOSS, RegRipper, and RECmd. Every tool call goes through `safe_subprocess()` with denylist checks and SHA256 audit logging. The server also includes a controlled process memory dump tool for extracting suspicious process images for FLOSS analysis.
 
-**Skill Framework**: 7+ technique protocols (markdown documents) that guide the agent through structured analysis — each protocol defines SETUP, PRIME, EXECUTE, ARTIFACT, FINDINGS, and HANDOFF steps. An orchestrator protocol manages phase routing, technique selection, and subagent dispatch for parallel analysis.
+**Skill Framework**: 8 technique protocols (markdown documents) that guide the agent through structured analysis — each protocol defines SETUP, PRIME, EXECUTE, ARTIFACT, FINDINGS, and HANDOFF steps. An orchestrator protocol manages phase routing, technique selection, and subagent dispatch for parallel analysis. Includes a novel AI-adversary detection protocol that reasons about AI-driven attacks using six analytical lenses, grounded in published threat intelligence from GTIG, MITRE ATLAS v5.4.0, Arctic Wolf, and Unit42.
 
 **Hooks**: PreToolUse hook enforces evidence write protection. PostToolUse hook maintains a JSONL audit trail with SHA256 hashes for every tool execution.
 
