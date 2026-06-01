@@ -23,13 +23,35 @@
 
 ## Key Findings
 
-| # | Finding | Confidence | Evidence Tier | Supporting Tools | MITRE ATT&CK |
-|---|---------|------------|---------------|------------------|---------------|
+| # | Finding | Verdict | Confidence | Evidence Tier | Supporting Tools | MITRE ATT&CK |
+|---|---------|---------|------------|---------------|------------------|---------------|
 {{#FINDINGS}}
-| {{FINDING_ID}} | {{DESCRIPTION}} | {{CONFIDENCE}} | Tier {{TIER}} | {{TOOLS}} | {{MITRE}} |
+| {{FINDING_ID}} | {{DESCRIPTION}} | {{VERDICT}} | {{CONFIDENCE}} | Tier {{TIER}} | {{TOOLS}} | {{MITRE}} |
 {{/FINDINGS}}
 
 **Tier Legend**: Tier 1 = Direct tool output | Tier 2 = Cross-referenced (2+ tools) | Tier 3 = Analytical inference
+**Verdict Legend**: ✅ CONFIRMED = independently re-derived from a tool call | 🔶 INFERRED = analytical conclusion (not directly observable) | ⚠️ UNVERIFIED = asserted but could not be grounded — treat with caution
+
+---
+
+## Verification Ledger
+
+Independent grounding pass (see `protocols/verification.md`): every finding was re-checked
+against a fresh tool execution. **Asserted facts that could not be re-derived are flagged
+UNVERIFIED rather than silently presented as fact** — this is VALKYRIE's hallucination guard.
+
+| Verdict | Count |
+|---------|-------|
+| ✅ CONFIRMED (re-derived from evidence) | {{CONFIRMED_COUNT}} |
+| 🔶 INFERRED (labeled analytical inference) | {{INFERRED_COUNT}} |
+| ⚠️ UNVERIFIED (asserted, not grounded — flagged) | {{UNVERIFIED_COUNT}} |
+
+{{#IF UNVERIFIED_COUNT}}
+**Flagged for caution:**
+{{#UNVERIFIED_FINDINGS}}
+- {{FINDING_ID}}: {{DESCRIPTION}} — could not be grounded by {{ATTEMPTED_TOOL}}; confidence downgraded.
+{{/UNVERIFIED_FINDINGS}}
+{{/IF}}
 
 ---
 
@@ -139,13 +161,13 @@ To run AI-adversary analysis on this case, use: `/investigate --iterate {{CASE_I
 Each finding traces back to a specific tool execution. To independently verify any finding:
 
 {{#FINDINGS_AUDIT}}
-### {{FINDING_ID}}: {{FINDING_TITLE}}
+### {{FINDING_ID}}: {{FINDING_TITLE}} — {{VERDICT}}
 
 **Evidence lineage:**
-1. **Tool**: {{TOOL_NAME}} on {{EVIDENCE_FILE}}
+1. **Producing tool**: {{TOOL_NAME}} on {{EVIDENCE_FILE}} (exec `{{PROVENANCE_EXEC_ID}}`)
    - Output: `{{OUTPUT_PATH}}` ({{OUTPUT_DETAIL}})
    - SHA256 of output: `{{OUTPUT_SHA256}}`
-2. **Verification**: {{VERIFICATION_METHOD}}
+2. **Independent verification**: {{VERIFICATION_METHOD}} (verdict **{{VERDICT}}**, verifier exec `{{VERIFIER_EXEC_ID}}`, output SHA256 `{{VERIFIER_SHA256}}`)
    - How to reproduce: `{{REPRODUCE_COMMAND}}`
 
 {{/FINDINGS_AUDIT}}

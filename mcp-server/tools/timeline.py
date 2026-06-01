@@ -69,6 +69,7 @@ def generate_timeline(
             data=None,
             evidence_file=image_path,
             output_sha256=result_l2t["sha256"],
+            execution_id=result_l2t["execution_id"],
             duration_seconds=result_l2t["duration_seconds"],
             error=f"log2timeline failed (exit {result_l2t['exit_code']}): {result_l2t['stderr'][:500]}",
         )
@@ -98,6 +99,7 @@ def generate_timeline(
             data=None,
             evidence_file=image_path,
             output_sha256=result_psort["sha256"],
+            execution_id=result_psort["execution_id"],
             duration_seconds=result_l2t["duration_seconds"] + result_psort["duration_seconds"],
             error=f"psort failed (exit {result_psort['exit_code']}): {result_psort['stderr'][:500]}",
         )
@@ -143,6 +145,7 @@ def generate_timeline(
         },
         evidence_file=image_path,
         output_sha256=result_psort["sha256"],
+        execution_id=result_psort["execution_id"],
         duration_seconds=total_duration,
     )
 
@@ -202,6 +205,7 @@ def extract_mft(
                 data=None,
                 evidence_file=image_path,
                 output_sha256=result["sha256"],
+                execution_id=result["execution_id"],
                 duration_seconds=result["duration_seconds"],
                 error=f"MFT parsing failed (exit {result['exit_code']}): {result['stderr'][:500]}",
             )
@@ -254,6 +258,7 @@ def extract_mft(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -275,7 +280,7 @@ def _filter_by_date(
     for row in rows:
         for col in date_columns:
             val = row.get(col, "")
-            if val and date_str <= val if after else val <= date_str:
+            if val and (date_str <= val if after else val <= date_str):
                 filtered.append(row)
                 break
 

@@ -16,6 +16,7 @@ Parse the skill invocation arguments:
 | `--resume <case-id>` | **Resume** — continue existing investigation |
 | `--iterate <case-id>` | **Iterate** — re-run with corrected approach |
 | `--iterate <case-id> <technique>` | **Iterate (scoped)** — re-run specific technique(s) |
+| `--loop <case-id>` | **Loop** — iterate until verifiable success/stagnation (see `protocols/persistent-loop.md`) |
 | `--lean` | **Lean** — triage + timeline + persistence only |
 | `--no-enrich` | Flag — disable IOC enrichment |
 | `--evidence-path <path>` | Flag — specify evidence directory |
@@ -43,6 +44,7 @@ Flags combine with modes: `--guided --lean --evidence-path /cases/001/evidence` 
 | `memory` | `protocols/techniques/memory-analysis.md` | `analysis/memory-analysis.json` | Deep Analysis | Memory dump |
 | `persistence` | `protocols/techniques/persistence-enumeration.md` | `analysis/persistence-enumeration.json` | Deep Analysis | Disk image |
 | `logs` | `protocols/techniques/log-analysis.md` | `analysis/log-analysis.json` | Deep Analysis | Log files (.evtx) |
+| `cloud` | `protocols/techniques/cloud-log-analysis.md` | `analysis/cloud-log-analysis.json` | Deep Analysis | Cloud logs (Entra/Azure/M365) |
 | `malware` | `protocols/techniques/malware-triage.md` | `analysis/malware-triage.json` | Deep Analysis | Suspicious files |
 | `ai-adversary` | `protocols/techniques/ai-adversary-analysis.md` | `analysis/ai-adversary-analysis.json` | Correlation | 2+ Phase 3 outputs |
 
@@ -72,6 +74,43 @@ At the start of ANY investigation:
 
 ---
 
+## Execution Logging (cross-cutting)
+
+Two append-only logs in `logs/` make every investigation reproducible and traceable —
+both are required evidence for the judging criteria (audit-trail quality + token usage).
+
+### 1. Tool-execution audit log — `logs/tool-execution.jsonl`
+
+Written automatically by the MCP server for every forensic tool call. Each line carries a
+unique **`execution_id`** (e.g. `EXEC-3f9a1c-0007`), timestamp, command, exit code,
+`output_sha256`, output length, and duration. **Every finding must cite the `execution_id`
+of the tool call that produced its evidence** so a judge can trace any claim to one line.
+
+### 2. Cost & token ledger — `logs/cost-ledger.jsonl`
+
+At the **end of each phase** (and each loop iteration), append one record capturing the
+resource cost of the work just completed. Token counts come from the Claude Code session
+usage; if a precise count is unavailable, record `tokens: null` and keep wall-clock +
+tool-call counts (never fabricate a number).
+
+```json
+{
+  "timestamp": "<ISO-8601>",
+  "phase": "3-deep-analysis",
+  "iteration": 1,
+  "wall_clock_seconds": 142.7,
+  "tool_calls": 18,
+  "tokens": {"input": 84210, "output": 9120, "total": 93330},
+  "cumulative_tokens": 187540,
+  "notes": "timeline + memory + persistence subagents"
+}
+```
+
+The final report's Audit Trail section summarizes this ledger (total tokens, total tool
+calls, wall-clock per phase) — the single-agent "logs with timestamps and token usage" deliverable.
+
+---
+
 ## Evidence Type Assessment
 
 After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess the available evidence to drive technique selection.
@@ -84,6 +123,7 @@ After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess
 | `.raw`, `.vmem`, `.lime`, `.dmp` (memory signature) | Memory Dump | memory, correlation |
 | `.evtx` | Windows Event Logs | logs, timeline |
 | `.reg`, `NTUSER.DAT`, `SYSTEM`, `SOFTWARE`, `SAM` | Registry Hives | persistence |
+| `.json`, `.ndjson`, `.csv` (Entra/Azure/M365 export) | Cloud Log | cloud |
 | `.pcap`, `.pcapng` | Network Capture | (future: network-analysis) |
 
 ### Technique Selection Matrix
@@ -95,9 +135,12 @@ After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess
 | Disk + Memory | timeline, persistence, memory, correlation, hypothesis |
 | Disk + Logs | timeline, persistence, logs, correlation |
 | Disk + Memory + Logs | timeline, persistence, memory, logs, correlation, hypothesis |
+| Cloud logs present | cloud (+ correlation/hypothesis when host evidence is also present) |
 | Unknown / mixed | Use `--guided` mode, inventory first |
 
 **Rule**: When 2+ evidence types are present, ALWAYS include `correlation` and `hypothesis` — these produce Tier 2 and Tier 3 findings and demonstrate analytical reasoning (Criterion #1).
+
+**Cloud rule**: When `cloud_log` evidence is present, ALWAYS include `cloud`. If host evidence (disk/memory/logs) is also present, add `correlation` to tie cloud account compromise to host activity (a strong breadth + depth signal).
 
 ### AI-Adversary Auto-Selection Triggers
 
@@ -225,7 +268,11 @@ Execute all 6 phases in order. Each phase reads prior phase output from the case
 2. The self-correction protocol reads ALL prior phase outputs and validates across them
 3. Corrections are written to `corrections/` directory
 4. A `corrections/validation-summary.json` summarizes what was checked and what was corrected
-5. **Run `/compact` after this phase** — context is at peak accumulation
+5. **Then read and execute `protocols/verification.md`** — assign every finding an
+   independent verdict (CONFIRMED / INFERRED / UNVERIFIED) by re-deriving its claim
+   from a fresh tool call. Writes `corrections/verification-ledger.json`. Any
+   `UNVERIFIED` asserted claim is downgraded and flagged (never silently dropped).
+6. **Run `/compact` after this phase** — context is at peak accumulation
 
 ### Phase 6 — Reporting
 
@@ -295,7 +342,8 @@ Execute a minimal investigation with only the highest-value techniques:
 1. Phase 1 (Evidence Inventory) — always
 2. Phase 2 (Triage) — always
 3. Phase 3 (Deep Analysis) — **only**: `timeline` + `persistence`
-4. Phase 5 (Self-Correction) — Layer 1 only (artifact existence validation)
+4. Phase 5 (Self-Correction) — Layer 1 only (artifact existence validation), then
+   `verification.md` on CRITICAL/HIGH findings only (verdict CONFIRMED/UNVERIFIED)
 5. Phase 6 (Reporting) — **full standardized report** (see Report Standardization Rule)
 
 Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is constrained.
@@ -335,6 +383,19 @@ Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is c
 
 ---
 
+## Loop Mode
+
+Read and execute `protocols/persistent-loop.md`. The loop repeatedly iterates the
+investigation on the same evidence — each pass runs self-correction + verification,
+appends a record to `logs/progress.jsonl`, and **course-corrects toward the open
+items** (UNVERIFIED claims, open HIGH issues, missing kill-chain phases) — until
+verifiable success criteria are met, progress stagnates, or `--max-iterations` is
+reached. With `--truth`, each iteration is scored by `eval/run_eval.py` so the report
+can show the iteration-1 → final F1 delta. The loop always terminates and never ships
+a result worse than a prior iteration (regression guard).
+
+---
+
 ## Technique Execution Contract
 
 ### In-Context Execution (1 technique — Direct mode)
@@ -353,7 +414,7 @@ Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is c
 
 | Tier | Techniques | Dependencies | Dispatch |
 |------|-----------|-------------|----------|
-| 1 (Independent) | timeline, memory, persistence, logs, malware | `inventory.json` + `triage.json` | Parallel subagents |
+| 1 (Independent) | timeline, memory, persistence, logs, cloud, malware | `inventory.json` + `triage.json` | Parallel subagents |
 | 2 (Dependent) | correlation, hypothesis, ai-adversary | ALL Tier 1 outputs in `analysis/` | Parallel subagents (after Tier 1 completes) |
 
 > **Note on ai-adversary placement**: The ai-adversary technique consumes all Tier 1 outputs and benefits from reading `artifact-correlation.json` (decoy candidates, absence indicators). For v1, it runs in parallel with correlation and hypothesis (Option A — simpler orchestration). A future optimization (Option B) would sequence it after correlation for richer input.
@@ -416,4 +477,16 @@ After all subagents complete, the orchestrator:
 1. Collects compact summaries (technique name + status + findings + handoff)
 2. Logs any FAILED or PARTIAL techniques
 3. Verifies artifact files exist on disk
-4. Proceeds to the next tier or phase
+4. **Early Contradiction Pass (after Tier 1, before dispatching Tier 2).**
+   Compare findings across the completed Tier-1 techniques for the same artifact
+   (timeline↔memory, memory↔logs, logs↔persistence) using the contradiction
+   patterns in `techniques/artifact-correlation.md` (timestamp mismatch, existence
+   mismatch, process/PID mismatch, hash mismatch). For each contradiction:
+   - attempt to resolve it now by re-invoking the specific MCP tool on the disputed
+     artifact (a contradiction caught here is cheaper than one discovered in Phase 4);
+   - if unresolved, mark both findings LOW confidence and pass the contradiction
+     forward in the Tier-2 subagent context so correlation/hypothesis treat it as a
+     signal rather than silently averaging over it.
+   Record the pass result in `analysis/contradiction-pass.json` (pairs checked,
+   contradictions found, resolved/unresolved).
+5. Proceeds to the next tier or phase

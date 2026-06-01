@@ -565,3 +565,138 @@ class TestSafeSubprocessEnv:
         from parsers.common import safe_subprocess
         sig = inspect.signature(safe_subprocess)
         assert "env" in sig.parameters
+
+
+# ============================================================================
+# Regression tests for correctness fixes (P0.1)
+# ============================================================================
+
+class TestDateFilterFix:
+    """timeline._filter_by_date: operator-precedence + empty-value handling."""
+
+    def test_filter_after_keeps_on_or_after(self):
+        from tools.timeline import _filter_by_date
+        rows = [{"modified": "2026-03-15"}, {"modified": "2026-03-05"}]
+        result = _filter_by_date(rows, "2026-03-10", after=True)
+        assert result == [{"modified": "2026-03-15"}]
+
+    def test_filter_before_keeps_on_or_before(self):
+        from tools.timeline import _filter_by_date
+        rows = [{"modified": "2026-03-15"}, {"modified": "2026-03-05"}]
+        result = _filter_by_date(rows, "2026-03-10", after=False)
+        assert result == [{"modified": "2026-03-05"}]
+
+    def test_filter_before_excludes_blank_dates(self):
+        """Regression: blank timestamps must NOT pass the 'before' branch.
+
+        The original `val and date_str <= val if after else val <= date_str`
+        bound as `(val and ...) if after else (val <= date_str)`, so on the
+        before-branch an empty string evaluated ``"" <= date_str`` -> True and
+        was wrongly included.
+        """
+        from tools.timeline import _filter_by_date
+        rows = [{"modified": ""}, {"modified": "2026-03-05"}]
+        result = _filter_by_date(rows, "2026-03-10", after=False)
+        assert {"modified": ""} not in result
+        assert result == [{"modified": "2026-03-05"}]
+
+
+class TestBinaryExtractionIntegrity:
+    """common.safe_subprocess capture_bytes + disk.extract_file byte fidelity."""
+
+    def test_safe_subprocess_capture_bytes_roundtrip(self, tmp_path):
+        """Raw bytes survive intact and the audit hash matches them exactly."""
+        import hashlib
+        import shutil
+        if shutil.which("cat") is None:
+            pytest.skip("cat not available")
+        from parsers.common import safe_subprocess
+        payload = bytes(range(256))  # every byte value — not valid UTF-8
+        f = tmp_path / "blob.bin"
+        f.write_bytes(payload)
+        res = safe_subprocess("cat", [str(f)], capture_bytes=True)
+        assert res["exit_code"] == 0
+        assert res["stdout_bytes"] == payload
+        assert res["sha256"] == hashlib.sha256(payload).hexdigest()
+
+    def test_extract_file_writes_exact_bytes(self, monkeypatch, tmp_path):
+        """extract_file writes the exact icat bytes (not lossy-decoded text)."""
+        from tools import disk
+        from parsers.common import compute_sha256
+        img = tmp_path / "disk.raw"
+        img.write_bytes(b"\x00")
+        outdir = tmp_path / "out"
+        payload = bytes(range(256))
+
+        def fake_subprocess(binary, args, **kwargs):
+            assert kwargs.get("capture_bytes") is True
+            return {
+                "execution_id": "EXEC-test-0001",
+                "stdout": "lossy-text", "stdout_bytes": payload, "stderr": "",
+                "exit_code": 0, "sha256": compute_sha256(payload),
+                "duration_seconds": 0.0, "truncated": False,
+            }
+
+        monkeypatch.setattr(disk, "safe_subprocess", fake_subprocess)
+        result = disk.extract_file(str(img), 1234, str(outdir), "out.bin")
+        assert result["status"] == "success"
+        assert (outdir / "out.bin").read_bytes() == payload
+        assert result["data"]["sha256"] == compute_sha256(payload)
+
+    def test_extract_file_refuses_truncated_artifact(self, monkeypatch, tmp_path):
+        """If output is capped, refuse rather than emit a wrong hash."""
+        from tools import disk
+        img = tmp_path / "disk.raw"
+        img.write_bytes(b"\x00")
+        outdir = tmp_path / "out"
+
+        def fake_subprocess(binary, args, **kwargs):
+            return {
+                "execution_id": "EXEC-test-0002",
+                "stdout": "", "stdout_bytes": b"partial", "stderr": "",
+                "exit_code": 0, "sha256": "0" * 64,
+                "duration_seconds": 0.0, "truncated": True,
+            }
+
+        monkeypatch.setattr(disk, "safe_subprocess", fake_subprocess)
+        result = disk.extract_file(str(img), 1234, str(outdir), "out.bin")
+        assert result["status"] == "error"
+        assert "limit" in result["error"].lower()
+        assert not (outdir / "out.bin").exists()
+
+
+# ============================================================================
+# Execution-trace traceability (P0.2): finding -> exact tool execution
+# ============================================================================
+
+class TestExecutionTraceability:
+
+    def test_build_tool_response_surfaces_execution_id(self):
+        from parsers.common import build_tool_response
+        r = build_tool_response(tool_name="t", data={}, execution_id="EXEC-abc-0001")
+        assert r["execution_id"] == "EXEC-abc-0001"
+
+    def test_execution_ids_are_unique_and_logged(self, tmp_path):
+        """Each subprocess gets a unique ID, recorded on both the response and
+        the matching tool-execution.jsonl line."""
+        import json
+        import shutil
+        if shutil.which("cat") is None:
+            pytest.skip("cat not available")
+        from parsers.common import safe_subprocess
+        case = tmp_path / "case"
+        case.mkdir()
+        f = tmp_path / "x.txt"
+        f.write_text("hello")
+        r1 = safe_subprocess("cat", [str(f)], case_dir=str(case), tool_name="probe")
+        r2 = safe_subprocess("cat", [str(f)], case_dir=str(case), tool_name="probe")
+        assert r1["execution_id"] != r2["execution_id"]
+        assert r1["execution_id"].startswith("EXEC-")
+
+        lines = (case / "logs" / "tool-execution.jsonl").read_text().strip().splitlines()
+        assert len(lines) == 2
+        entry0 = json.loads(lines[0])
+        assert entry0["execution_id"] == r1["execution_id"]
+        # audit line remains independently traceable
+        for field in ("timestamp", "tool_name", "command", "output_sha256"):
+            assert field in entry0

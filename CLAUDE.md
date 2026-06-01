@@ -20,6 +20,7 @@ Always use `mcp__valkyrie__*` tools for forensic operations. The MCP server prov
 - `check_persistence` — Persistence mechanism scan
 - `scan_yara` — YARA signature scanning
 - `extract_strings` — String extraction (tries FLOSS first, falls back to strings)
+- `analyze_cloud_logs` — Entra ID / Azure / M365 log analysis (identity-plane attacks, ATT&CK for Cloud)
 
 ## Memory Analysis Workflow
 

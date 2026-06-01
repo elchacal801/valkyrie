@@ -30,8 +30,10 @@ VALKYRIE conducts autonomous incident response investigations on SIFT Workstatio
 2. **Triage Assessment** — Quick-look YARA scan, process listing, network connections, initial anomaly detection
 3. **Deep Analysis** — Executes technique protocols: memory analysis, timeline reconstruction, persistence enumeration, log analysis, malware triage
 4. **Correlation & Synthesis** — Cross-references findings, builds attack narrative with MITRE ATT&CK mapping, runs Analysis of Competing Hypotheses (ACH) to systematically evaluate explanations
-5. **Self-Correction** — Three-layer forensic validation catches hallucinated artifacts, temporal impossibilities, and analytical incoherence — then auto-remediates
-6. **Reporting** — Produces a structured investigative report where every claim cites the specific tool execution that produced the evidence
+5. **Self-Correction & Verification** — Three-layer forensic validation catches hallucinated artifacts, temporal impossibilities, and analytical incoherence and auto-remediates; then a per-finding grounding pass labels each finding CONFIRMED / INFERRED / UNVERIFIED
+6. **Reporting** — Produces a structured investigative report (with a Verification Ledger) where every claim cites the specific tool execution that produced the evidence
+
+It also analyzes **cloud** identity logs (`/investigate cloud`) and can run a **persistent learning loop** (`/investigate --loop`) that iterates to verifiable success with a measured accuracy gain.
 
 ### Key Differentiators
 
@@ -45,7 +47,15 @@ VALKYRIE conducts autonomous incident response investigations on SIFT Workstatio
 - Layer 2: Checks that the timeline is chronologically possible and timezone-consistent
 - Layer 3: Validates that the attack narrative follows a plausible kill chain and that alternative hypotheses were considered
 
-**Hypothesis Testing (ACH for IR)**: Before concluding "APT intrusion," VALKYRIE systematically evaluates competing hypotheses — commodity malware, insider threat, legitimate activity, red team — and eliminates them with specific evidence. The hypothesis with the fewest inconsistencies wins.
+**Hypothesis Testing (ACH for IR)**: Before concluding "APT intrusion," VALKYRIE systematically evaluates competing hypotheses — commodity malware, insider threat, legitimate activity, red team, **AI-assisted attack** — and eliminates them with specific evidence. The hypothesis with the fewest inconsistencies wins.
+
+**Per-Finding Verification (hallucination guard)**: After self-correction, every finding gets an independent verdict — **CONFIRMED** (re-derived from a fresh tool call), **INFERRED** (analytical conclusion, never penalized), or **UNVERIFIED** (asserted but couldn't be grounded — flagged and downgraded, *never silently dropped*). Verification is grounded in tool re-execution, not re-reasoning, because re-reasoning only inflates confidence. This is the direct answer to "are hallucinations caught and flagged? are confirmed findings distinguished from inferences?"
+
+**Measurable Persistent Learning Loop**: `/investigate --loop` iterates on the same evidence until verifiable success criteria are met (zero ungrounded asserted findings, zero open HIGH issues, kill-chain evidenced-or-marked) or progress stagnates. `logs/progress.jsonl` records each iteration's signals and a demonstrable first→final accuracy delta, with full execution traces preserved.
+
+**Cloud breadth (Entra ID / Azure / M365)**: Modern intrusions often never touch a host disk. VALKYRIE analyzes identity-plane logs for impossible travel, MFA fatigue, illicit OAuth consent, BEC inbox rules, privileged role grants, and mass downloads — each mapped to MITRE ATT&CK for Cloud.
+
+**Quantified accuracy**: A bundled harness (`eval/`) scores findings against documented ground truth (NIST CFReDS Hacking Case, a public memory image, and a synthetic Entra/Azure sample), producing precision/recall/F1 and explicit false-positive / missed-artifact tables — measuring precision only over *asserted* claims so inferences aren't mistaken for hallucinations.
 
 **Architectural Evidence Protection**: Not prompt-based guardrails. Five enforcement layers that physically prevent evidence modification:
 1. Typed MCP server (12 read-only functions — no shell access)
@@ -60,11 +70,13 @@ VALKYRIE conducts autonomous incident response investigations on SIFT Workstatio
 
 **Custom MCP Server** (Python, stdio transport): 12 forensic tools wrapping SleuthKit (mmls, fls, icat), Volatility 3 (17 plugins), Plaso (log2timeline), YARA, FLOSS, RegRipper, and RECmd. Every tool call goes through `safe_subprocess()` with denylist checks and SHA256 audit logging. The server also includes a controlled process memory dump tool for extracting suspicious process images for FLOSS analysis.
 
-**Skill Framework**: 8 technique protocols (markdown documents) that guide the agent through structured analysis — each protocol defines SETUP, PRIME, EXECUTE, ARTIFACT, FINDINGS, and HANDOFF steps. An orchestrator protocol manages phase routing, technique selection, and subagent dispatch for parallel analysis. Includes a novel AI-adversary detection protocol that reasons about AI-driven attacks using six analytical lenses, grounded in published threat intelligence from GTIG, MITRE ATLAS v5.4.0, Arctic Wolf, and Unit42.
+**Skill Framework**: 9 technique protocols (markdown documents) that guide the agent through structured analysis — each protocol defines SETUP, PRIME, EXECUTE, ARTIFACT, FINDINGS, and HANDOFF steps. An orchestrator manages phase routing, technique selection, and a hypothesis-driven subagent swarm (parallel Tier-1 with an early contradiction pass before Tier-2). Dedicated `verification.md` (per-finding grounding) and `persistent-loop.md` (measurable iteration) protocols sit in Phase 5+. Includes a novel AI-adversary detection protocol grounded in GTIG, MITRE ATLAS v5.4.0, Arctic Wolf, and Unit42, plus a cloud-log analysis protocol mapped to ATT&CK for Cloud.
 
-**Hooks**: PreToolUse hook enforces evidence write protection. PostToolUse hook maintains a JSONL audit trail with SHA256 hashes for every tool execution.
+**Hooks**: PreToolUse hook enforces evidence write protection. PostToolUse hook maintains a JSONL audit trail; every tool execution carries a unique `execution_id` + SHA256, so any finding traces to one exact tool call.
 
-**Test Suite**: 46 unit tests covering parsers, denylist enforcement, failure scenarios, and safety checks.
+**Test Suite & CI**: 81 tests (parsers, denylist, server dispatch, evidence-protection hooks, cloud detectors, eval harness) running on GitHub Actions across Python 3.10–3.12.
+
+**Model**: Targets Claude Opus 4.8 — the same Claude Code + MCP reference architecture SANS demoed — and leans on frontier reasoning for hypothesis generation and verifier adjudication.
 
 ## Results
 
@@ -105,10 +117,10 @@ During the first investigation, VALKYRIE initially flagged `subject_srv.exe` as 
 
 ## What's Next
 
-- Disk image analysis (timeline reconstruction, persistence enumeration, MFT parsing)
-- Network forensics (PCAP analysis)
-- Automated multi-host correlation
-- YARA rule generation from discovered IOCs
+- Publish headline precision/recall/F1 on the full NIST CFReDS Hacking Case and a public memory image via the bundled `eval/` harness
+- More cloud providers (AWS CloudTrail, GCP audit, Okta) behind the same `analyze_cloud_logs` model
+- Network forensics (PCAP analysis) and automated multi-host / host↔cloud correlation
+- IOC enrichment + structured `iocs.json` export for SIEM/EDR and YARA rule generation from discovered IOCs
 
 ## Built With
 
@@ -121,7 +133,8 @@ During the first investigation, VALKYRIE initially flagged `subject_srv.exe` as 
 - YARA — signature scanning
 - FLOSS (Mandiant) — obfuscated string extraction
 - RegRipper / RECmd — Windows registry analysis
-- Python — MCP server implementation
+- Microsoft Entra ID / Azure / M365 logs — cloud identity-plane analysis (ATT&CK for Cloud)
+- Python — MCP server + accuracy harness implementation
 
 ---
 

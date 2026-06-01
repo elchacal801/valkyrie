@@ -18,6 +18,7 @@ Conduct structured forensic investigations using techniques adapted from intelli
 /investigate --resume <case-id>                 → Resume or update existing investigation
 /investigate --iterate <case-id>                → Re-run with corrected approach or new evidence
 /investigate --iterate <case-id> <technique>    → Re-run specific technique(s) only
+/investigate --loop <case-id>                   → Persistent learning loop: iterate until verifiable success/stagnation
 /investigate --lean                             → Lean mode (triage + timeline + persistence only)
 /investigate --evidence-path <path>             → Specify evidence directory (default: auto-detect)
 /investigate --case-id <id>                     → Specify case identifier (default: auto-generate)
@@ -113,8 +114,8 @@ The orchestrator controls a 6-phase pipeline. Each phase reads the previous phas
 | 2 | Triage Assessment | `inventory.json` | `triage.json` | YARA scan, partition layout, initial timeline bounds, obvious anomalies |
 | 3 | Deep Analysis | `triage.json` + evidence | `analysis/*.json` | Execute selected technique protocols against evidence |
 | 4 | Correlation & Synthesis | `analysis/*.json` | `synthesis.json` | Cross-reference findings, build attack narrative, assign evidence tiers |
-| 5 | Self-Correction | All prior outputs | `corrections/` | Three-layer forensic validation with auto-remediation |
-| 6 | Reporting | All outputs + corrections | `report/` | Structured investigative narrative with citations |
+| 5 | Self-Correction & Verification | All prior outputs | `corrections/` | Three-layer validation + auto-remediation, then a per-finding grounding pass (CONFIRMED / INFERRED / UNVERIFIED) |
+| 6 | Reporting | All outputs + corrections | `report/` | Structured investigative narrative with citations + Verification Ledger |
 
 ## Self-Correction (3 Forensic Validation Layers)
 
@@ -126,6 +127,23 @@ Self-correction is the core differentiator. It catches IR-specific hallucination
 - **Auto-Remediation**: When any layer detects a HIGH-severity issue: log the issue, re-invoke the relevant MCP tool for ground truth, document what changed, flag the correction in the final report. Capped at 3 corrections per layer per run.
 
 All corrections are logged to `corrections/correction-NNN.json` with full traceability: what was wrong, how it was detected, what the corrected value is, and the SHA256 hash of the verification tool output.
+
+## Verification (per-finding grounding)
+
+After self-correction, `protocols/verification.md` assigns **every** finding a verdict by
+re-deriving its claim from a *fresh* tool call (never by re-reasoning — that only inflates
+confidence):
+
+- **CONFIRMED** — an independent MCP execution re-produced the artifact (records the verifier
+  tool, its `execution_id`, and output SHA256).
+- **INFERRED** — an analytical conclusion (ACH, correlation, AI-tempo) that is legitimately not
+  directly observable. Reported as inference, never penalized.
+- **UNVERIFIED** — an *asserted* claim that could not be grounded. Confidence is downgraded and
+  the finding is flagged in the Verification Ledger — **caught, not hidden**.
+
+This is the direct answer to "hallucinations caught and flagged? confirmed distinguished from
+inferences?" Verdicts populate `corrections/verification-ledger.json` and the report's
+Verification Ledger + Audit Trail sections.
 
 ## Evidence Tiers
 
@@ -159,12 +177,16 @@ Every claim in every artifact must be cited. No exceptions. Citation formats:
 
 | Source | Format |
 |--------|--------|
-| MCP tool output | `[TOOL: <tool_name>, evidence: <file>, <key_detail>]` |
-| Cross-reference | `[CORROBORATED: <tool1> + <tool2> @ <timestamp_or_detail>]` |
+| MCP tool output | `[TOOL: <tool_name>, exec: <execution_id>, evidence: <file>, <key_detail>]` |
+| Cross-reference | `[CORROBORATED: <tool1>(<exec_id>) + <tool2>(<exec_id>) @ <timestamp_or_detail>]` |
 | Inference | `[INFERENCE: <reasoning summary>, confidence: HIGH\|MEDIUM\|LOW]` |
 | Prior phase | `[PHASE: <phase_name>, finding: <finding_id>]` |
 | User-provided | `[USER: session context]` |
-| Self-correction | `[CORRECTED: was <original>, now <corrected>, verified by <tool>]` |
+| Self-correction | `[CORRECTED: was <original>, now <corrected>, verified by <tool>(<exec_id>)]` |
+
+The `<execution_id>` is the `execution_id` field returned by every MCP tool call and
+recorded on the matching `logs/tool-execution.jsonl` line — it lets a judge trace any
+finding to the exact tool execution (and its `output_sha256`) that produced it.
 
 Tool output is presented as fact when the tool executed successfully. Inferences are never presented as confirmed findings — always qualified with confidence level.
 

@@ -1,0 +1,12 @@
+{
+  "dataset": "VALKYRIE eval harness self-test",
+  "dataset_url": "",
+  "description": "Tiny fully-known fixture exercising TP, FN, FP, and inference handling. Expected: recall 3/4, precision 2/3, F1 ~0.7059, 1 missed (mimikatz), 1 hallucination (192.168.1.99), 1 inference (not penalized).",
+  "benign_allowlist": [],
+  "items": [
+    {"id": "GT-1", "type": "file", "description": "evil.exe present", "match_any": ["evil.exe"], "required": true},
+    {"id": "GT-2", "type": "network", "description": "C2 to 10.0.0.5", "match_any": ["10.0.0.5"], "required": true},
+    {"id": "GT-3", "type": "tool", "description": "Mimikatz used (the agent should miss this)", "match_any": ["mimikatz"], "required": true},
+    {"id": "GT-4", "type": "persistence", "description": "Run key persistence", "match_any": ["run key", "currentversion\\run"], "required": true}
+  ]
+}

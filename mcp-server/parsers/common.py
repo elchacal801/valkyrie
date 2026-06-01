@@ -9,11 +9,13 @@ Shared infrastructure for all tool modules:
 """
 
 import hashlib
+import itertools
 import json
 import logging
 import os
 import subprocess
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,19 @@ from typing import Any
 import denylist
 
 logger = logging.getLogger("valkyrie.common")
+
+# --- Execution identity -----------------------------------------------------
+# Every subprocess execution gets a unique, human-readable, sortable ID so that
+# any finding can be traced back to the exact tool-execution.jsonl line that
+# produced its evidence (a core FIND EVIL! judging requirement). The per-process
+# session token keeps IDs unique even if the server restarts mid-investigation
+# and appends to the same case audit log.
+_SESSION_TOKEN = uuid.uuid4().hex[:6]
+_exec_counter = itertools.count(1)
+
+
+def _next_execution_id() -> str:
+    return f"EXEC-{_SESSION_TOKEN}-{next(_exec_counter):04d}"
 
 # Maximum rows to return from tools that produce tabular output.
 # Full output is written to the case working directory; only truncated
@@ -60,6 +75,7 @@ def safe_subprocess(
     case_dir: str | None = None,
     tool_name: str = "",
     env: dict[str, str] | None = None,
+    capture_bytes: bool = False,
 ) -> dict[str, Any]:
     """Execute a forensic tool safely with denylist enforcement and audit logging.
 
@@ -72,9 +88,14 @@ def safe_subprocess(
         case_dir: Path to the active case directory for audit logging.
         tool_name: Logical tool name for audit trail (e.g., "get_partition_layout").
         env: Optional environment variable overrides (merged with os.environ).
+        capture_bytes: If True, include the raw, undecoded stdout bytes in the
+            result under "stdout_bytes". Required for binary-safe operations such
+            as file extraction, where lossy UTF-8 decoding would corrupt content
+            and invalidate the SHA256 of the extracted artifact.
 
     Returns:
-        Dict with keys: stdout, stderr, exit_code, sha256, duration_seconds, truncated.
+        Dict with keys: stdout, stderr, exit_code, sha256, duration_seconds,
+        truncated, execution_id (and stdout_bytes when capture_bytes=True).
 
     Raises:
         ToolExecutionError: If the binary is blocked or execution fails.
@@ -133,22 +154,28 @@ def safe_subprocess(
         stderr = result.stderr.decode("latin-1", errors="replace")
 
     # --- Compute integrity hash ---
-    output_hash = compute_sha256(stdout)
+    # On the binary-safe path, hash the raw bytes so the audit hash matches the
+    # exact content written to disk (lossy text decoding would diverge).
+    output_hash = compute_sha256(stdout_bytes if capture_bytes else stdout)
+
+    execution_id = _next_execution_id()
 
     # --- Audit logging ---
     if case_dir:
         _write_audit_entry(
             case_dir=case_dir,
+            execution_id=execution_id,
             tool_name=tool_name or binary,
             command=cmd,
             exit_code=result.returncode,
             output_sha256=output_hash,
-            output_length=len(stdout),
+            output_length=len(stdout_bytes) if capture_bytes else len(stdout),
             duration_seconds=round(duration, 3),
             truncated=truncated,
         )
 
-    return {
+    response = {
+        "execution_id": execution_id,
         "stdout": stdout,
         "stderr": stderr,
         "exit_code": result.returncode,
@@ -156,11 +183,15 @@ def safe_subprocess(
         "duration_seconds": round(duration, 3),
         "truncated": truncated,
     }
+    if capture_bytes:
+        response["stdout_bytes"] = stdout_bytes
+    return response
 
 
 def _write_audit_entry(
     *,
     case_dir: str,
+    execution_id: str,
     tool_name: str,
     command: list[str],
     exit_code: int,
@@ -175,6 +206,7 @@ def _write_audit_entry(
     log_file = log_dir / "tool-execution.jsonl"
 
     entry = {
+        "execution_id": execution_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "tool_name": tool_name,
         "command": command,
@@ -190,6 +222,36 @@ def _write_audit_entry(
             f.write(json.dumps(entry) + "\n")
     except OSError as e:
         logger.warning("Failed to write audit entry: %s", e)
+
+
+def record_in_process_execution(
+    *,
+    case_dir: str | None,
+    tool_name: str,
+    command: list[str],
+    output_text: str,
+    duration_seconds: float = 0.0,
+) -> tuple[str, str]:
+    """Audit-log a tool that parsed evidence in-process (no subprocess) and mint a
+    unique execution_id, so its findings are as traceable as subprocess-backed tools.
+
+    Returns ``(execution_id, output_sha256)``.
+    """
+    execution_id = _next_execution_id()
+    output_sha256 = compute_sha256(output_text)
+    if case_dir:
+        _write_audit_entry(
+            case_dir=case_dir,
+            execution_id=execution_id,
+            tool_name=tool_name,
+            command=command,
+            exit_code=0,
+            output_sha256=output_sha256,
+            output_length=len(output_text),
+            duration_seconds=duration_seconds,
+            truncated=False,
+        )
+    return execution_id, output_sha256
 
 
 def parse_csv_output(
@@ -295,14 +357,18 @@ def build_tool_response(
     evidence_file: str = "",
     output_sha256: str = "",
     duration_seconds: float = 0.0,
+    execution_id: str = "",
     error: str | None = None,
 ) -> dict[str, Any]:
     """Build a standardized MCP tool response envelope.
 
-    Every tool response includes metadata for audit trail traceability.
+    Every tool response includes metadata for audit trail traceability. The
+    ``execution_id`` ties the response to a specific tool-execution.jsonl line so
+    that any downstream finding can cite the exact execution that produced it.
     """
     response = {
         "tool": tool_name,
+        "execution_id": execution_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "evidence_file": evidence_file,
         "output_sha256": output_sha256,

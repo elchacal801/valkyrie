@@ -1,0 +1,27 @@
+[
+  {"userPrincipalName": "alice@contoso.com", "createdDateTime": "2026-05-01T10:00:00Z", "ipAddress": "198.51.100.10", "location": {"countryOrRegion": "United States", "city": "Seattle"}, "status": {"errorCode": 0}, "clientAppUsed": "Browser", "appDisplayName": "Office 365"},
+  {"userPrincipalName": "alice@contoso.com", "createdDateTime": "2026-05-01T10:30:00Z", "ipAddress": "203.0.113.99", "location": {"countryOrRegion": "Russia", "city": "Moscow"}, "status": {"errorCode": 0}, "clientAppUsed": "Browser", "appDisplayName": "Office 365"},
+
+  {"userPrincipalName": "bob@contoso.com", "createdDateTime": "2026-05-01T11:00:00Z", "ipAddress": "198.51.100.20", "location": {"countryOrRegion": "United States"}, "status": {"errorCode": 50074, "failureReason": "User did not pass the MFA challenge"}, "clientAppUsed": "Mobile Apps and Desktop clients", "appDisplayName": "Microsoft Teams"},
+  {"userPrincipalName": "bob@contoso.com", "createdDateTime": "2026-05-01T11:01:00Z", "ipAddress": "198.51.100.20", "status": {"errorCode": 50074}, "clientAppUsed": "Mobile Apps and Desktop clients"},
+  {"userPrincipalName": "bob@contoso.com", "createdDateTime": "2026-05-01T11:02:00Z", "ipAddress": "198.51.100.20", "status": {"errorCode": 50074}, "clientAppUsed": "Mobile Apps and Desktop clients"},
+  {"userPrincipalName": "bob@contoso.com", "createdDateTime": "2026-05-01T11:03:00Z", "ipAddress": "198.51.100.20", "status": {"errorCode": 50074}, "clientAppUsed": "Mobile Apps and Desktop clients"},
+  {"userPrincipalName": "bob@contoso.com", "createdDateTime": "2026-05-01T11:04:00Z", "ipAddress": "198.51.100.20", "status": {"errorCode": 50074}, "clientAppUsed": "Mobile Apps and Desktop clients"},
+  {"userPrincipalName": "bob@contoso.com", "createdDateTime": "2026-05-01T11:05:00Z", "ipAddress": "198.51.100.20", "status": {"errorCode": 0}, "clientAppUsed": "Mobile Apps and Desktop clients"},
+
+  {"userPrincipalName": "carol@contoso.com", "createdDateTime": "2026-05-01T09:15:00Z", "ipAddress": "198.51.100.30", "location": {"countryOrRegion": "United States"}, "status": {"errorCode": 0}, "clientAppUsed": "IMAP4", "appDisplayName": "Exchange"},
+
+  {"userPrincipalName": "dave@contoso.com", "createdDateTime": "2026-05-01T12:00:00Z", "ipAddress": "203.0.113.7", "location": {"countryOrRegion": "Nigeria"}, "status": {"errorCode": 0}, "clientAppUsed": "Browser", "riskLevelDuringSignIn": "high", "appDisplayName": "Azure Portal"},
+
+  {"userPrincipalName": "u1@contoso.com", "createdDateTime": "2026-05-01T08:00:00Z", "ipAddress": "203.0.113.50", "status": {"errorCode": 50126}, "clientAppUsed": "Browser"},
+  {"userPrincipalName": "u2@contoso.com", "createdDateTime": "2026-05-01T08:00:05Z", "ipAddress": "203.0.113.50", "status": {"errorCode": 50126}, "clientAppUsed": "Browser"},
+  {"userPrincipalName": "u3@contoso.com", "createdDateTime": "2026-05-01T08:00:10Z", "ipAddress": "203.0.113.50", "status": {"errorCode": 50126}, "clientAppUsed": "Browser"},
+  {"userPrincipalName": "u4@contoso.com", "createdDateTime": "2026-05-01T08:00:15Z", "ipAddress": "203.0.113.50", "status": {"errorCode": 50126}, "clientAppUsed": "Browser"},
+  {"userPrincipalName": "u5@contoso.com", "createdDateTime": "2026-05-01T08:00:20Z", "ipAddress": "203.0.113.50", "status": {"errorCode": 50126}, "clientAppUsed": "Browser"},
+
+  {"activityDisplayName": "Consent to application", "activityDateTime": "2026-05-01T13:00:00Z", "initiatedBy": {"user": {"userPrincipalName": "mallory@contoso.com"}}, "result": "success", "targetResources": [{"displayName": "TotallyLegitApp", "type": "Application"}]},
+  {"activityDisplayName": "Add member to role", "activityDateTime": "2026-05-01T13:05:00Z", "initiatedBy": {"user": {"userPrincipalName": "mallory@contoso.com"}}, "result": "success", "targetResources": [{"displayName": "Global Administrator", "type": "Role"}]},
+  {"activityDisplayName": "Add service principal credentials", "activityDateTime": "2026-05-01T13:10:00Z", "initiatedBy": {"user": {"userPrincipalName": "mallory@contoso.com"}}, "result": "success", "targetResources": [{"displayName": "backup-sp", "type": "ServicePrincipal"}]},
+
+  {"Operation": "New-InboxRule", "CreationTime": "2026-05-01T14:00:00Z", "UserId": "eve@contoso.com", "ClientIP": "203.0.113.77", "Workload": "Exchange"}
+]

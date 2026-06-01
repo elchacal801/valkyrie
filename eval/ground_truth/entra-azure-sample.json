@@ -1,0 +1,17 @@
+{
+  "dataset": "VALKYRIE synthetic Entra ID / Azure / M365 sample",
+  "dataset_url": "eval/datasets/entra-azure-sample.json (bundled, fully known)",
+  "description": "Controlled cloud-log scenario with planted, fully-documented ground truth. Demonstrates VALKYRIE's identity-plane breadth (no host disk involved). Each item's match_any includes both the detection name and its associated IOCs so precision and recall are both meaningful. Score report/findings.json from a cloud investigation against this file with eval/run_eval.py.",
+  "benign_allowlist": [],
+  "items": [
+    {"id": "CL-001", "type": "ioc", "description": "Impossible travel for alice@contoso.com (US -> Russia in 30 min)", "match_any": ["impossible travel", "alice@contoso.com", "203.0.113.99", "198.51.100.10"], "mitre": "T1078.004", "required": true},
+    {"id": "CL-002", "type": "ioc", "description": "MFA fatigue / bombing against bob@contoso.com", "match_any": ["mfa fatigue", "mfa bombing", "bob@contoso.com"], "mitre": "T1621", "required": true},
+    {"id": "CL-003", "type": "ioc", "description": "Legacy authentication (IMAP4) by carol@contoso.com", "match_any": ["legacy authentication", "carol@contoso.com", "198.51.100.30"], "mitre": "T1078.004", "required": true},
+    {"id": "CL-004", "type": "ioc", "description": "Risky sign-in for dave@contoso.com", "match_any": ["risky sign-in", "dave@contoso.com", "203.0.113.7"], "mitre": "T1078.004", "required": true},
+    {"id": "CL-005", "type": "ioc", "description": "Password spray from 203.0.113.50", "match_any": ["password spray", "203.0.113.50"], "mitre": "T1110.003", "required": true},
+    {"id": "CL-006", "type": "ioc", "description": "Illicit OAuth consent grant by mallory@contoso.com", "match_any": ["oauth", "consent", "mallory@contoso.com"], "mitre": "T1528", "required": true},
+    {"id": "CL-007", "type": "ioc", "description": "Privileged role assignment (Global Administrator)", "match_any": ["privileged role"], "mitre": "T1098.003", "required": true},
+    {"id": "CL-008", "type": "ioc", "description": "Service principal credential added (backup-sp)", "match_any": ["service principal credential"], "mitre": "T1098.001", "required": true},
+    {"id": "CL-009", "type": "ioc", "description": "Suspicious inbox rule created by eve@contoso.com", "match_any": ["inbox", "mail rule", "eve@contoso.com"], "mitre": "T1114.003", "required": true}
+  ]
+}

@@ -10,14 +10,15 @@
 
 <p align="center">
   Autonomous incident response with structured analytical reasoning,<br/>
-  multi-layer self-correction, and architectural evidence protection.
+  per-finding verification, a measurable learning loop, and architectural evidence protection.
 </p>
 
 <p align="center">
   <a href="https://findevil.devpost.com/"><img src="https://img.shields.io/badge/SANS-Find%20Evil!-2ecc71?style=flat-square" alt="Find Evil!"/></a>
   <img src="https://img.shields.io/badge/framework-Claude%20Code-cc785c?style=flat-square" alt="Claude Code"/>
   <img src="https://img.shields.io/badge/architecture-Custom%20MCP-5c8fcc?style=flat-square" alt="MCP Server"/>
-  <img src="https://img.shields.io/badge/tests-46%20passing-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-81%20passing-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/model-Claude%20Opus%204.8-cc785c?style=flat-square" alt="Claude Opus 4.8"/>
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="MIT License"/>
 </p>
 
@@ -45,8 +46,11 @@ Most forensic AI agents are **tool runners** — they wrap forensic tools behind
 | Tool execution | Sequential phases | Adaptive technique selection based on evidence |
 | Findings | Binary (found/not found) | 3-tier evidence with confidence scores |
 | Self-correction | Retry on failure | 3-layer forensic validation (artifact, temporal, analytical) |
+| Hallucination handling | Hope for the best | Per-finding verdicts — CONFIRMED / INFERRED / **UNVERIFIED** (flagged, not hidden) |
+| Improvement | One pass | Persistent learning loop with a measurable first→final accuracy gain |
+| Scope | Host disk only | Host **and** cloud (Entra ID / Azure / M365 identity-plane attacks) |
 | Reasoning | Hidden | Transparent hypothesis testing (ACH for IR) |
-| Audit trail | Tool execution log | Case directory IS the audit trail — every finding cites its source |
+| Audit trail | Tool execution log | Case directory IS the audit trail — every finding cites an `execution_id` |
 
 ## Results
 
@@ -82,32 +86,38 @@ This is the difference between a tool runner and an analytical reasoner: **the a
 Claude Code (reasoning engine)
     │
 VALKYRIE Skill Framework (/investigate command)
-    ├── Orchestrator (6-phase IR pipeline)
+    ├── Orchestrator (6-phase IR pipeline + hypothesis-driven subagent swarm)
     ├── Self-Correction (3 forensic validation layers)
-    ├── 8 Technique Protocols (IR-adapted SATs + AI-adversary detection)
-    └── Templates & Reporting
+    ├── Verification (per-finding CONFIRMED / INFERRED / UNVERIFIED grounding)
+    ├── Persistent Learning Loop (iterate to verifiable success; measured delta)
+    ├── 9 Technique Protocols (IR-adapted SATs + AI-adversary + cloud)
+    └── Templates & Reporting (+ Verification Ledger)
     │
 Claude Code Hooks (evidence protection + audit logging)
     │
 Custom MCP Server (Python, stdio transport)
-    ├── 5 tool modules (11 tools): disk, timeline, memory, registry, scanner
+    ├── 6 tool modules (12 tools): disk, timeline, memory, registry, scanner, cloud
     ├── 17 Volatility plugins with ISF symbol auto-resolution
-    ├── FLOSS-first string extraction, controlled process memory dump
-    └── Denylist (73 binaries) + shell=False + SHA256 audit logging
+    ├── Entra ID / Azure / M365 cloud-log analysis (ATT&CK for Cloud)
+    └── Denylist (73 binaries) + shell=False + execution_id'd SHA256 audit logging
     │
 SIFT Workstation Tools (sleuthkit, volatility3, plaso, yara, floss, regripper)
     │
 Evidence (read-only, write-protected at 5 architectural layers)
+    │
+Accuracy Harness (eval/) — precision/recall/F1 vs documented ground truth
 ```
 
 ### Trust Boundaries
 
-**Architectural enforcement (not prompt-based):**
-1. **Typed MCP server** — 11 read-only functions, no shell access to the agent
+**Architectural enforcement (not prompt-based)** — these hold even if the model is fully jailbroken:
+1. **Typed MCP server** — 12 read-only functions, no shell access to the agent
 2. **Denylist** — 73 blocked binaries (rm, dd, wget, curl, ssh) at subprocess level
 3. **shell=False** — hardcoded on every subprocess call, no injection possible
 4. **PreToolUse hook** — blocks any write attempt to evidence directories
 5. **PostToolUse hook** — logs every tool call with SHA256 hash of output
+
+**Prompt-based guidance (CLAUDE.md / protocols)** — workflow and analytical rigor (MCP-first rule, citation requirement, technique selection). These shape *how* the agent reasons; the five layers above enforce *what it can do* regardless.
 
 ## Quick Start
 
@@ -129,8 +139,10 @@ claude
 /investigate                                    # Auto-assess evidence, select techniques
 /investigate memory                             # Memory analysis specifically
 /investigate timeline                           # Timeline reconstruction
+/investigate cloud                              # Entra ID / Azure / M365 identity-plane analysis
 /investigate --guided                           # Walk through all 6 IR phases
 /investigate --lean                             # Fast triage (3 techniques)
+/investigate --loop <case-id>                   # Persistent learning loop until verifiable success
 /investigate --resume <case-id>                 # Continue a previous investigation
 /investigate --iterate <case-id>                # Re-run with corrected approach
 /investigate --evidence-path /path/to/evidence  # Specify evidence location
@@ -144,8 +156,8 @@ claude
 | 2 | Triage Assessment | YARA scan, process listing, network connections, anomaly detection | `triage.json` |
 | 3 | Deep Analysis | Execute technique protocols against evidence | `analysis/*.json` |
 | 4 | Correlation & Synthesis | Cross-reference findings, build attack narrative, ACH | `synthesis.json` |
-| 5 | Self-Correction | 3-layer forensic validation with auto-remediation | `corrections/` |
-| 6 | Reporting | Structured narrative with citations to specific artifacts | `report/` |
+| 5 | Self-Correction & Verification | 3-layer validation + per-finding grounding (CONFIRMED/INFERRED/UNVERIFIED) | `corrections/` |
+| 6 | Reporting | Structured narrative + Verification Ledger, citations to specific artifacts | `report/` |
 
 ## Evidence Tiers
 
@@ -163,27 +175,60 @@ VALKYRIE handles real-world tool failures gracefully:
 - **Partial evidence**: Memory-only evidence? Pipeline adapts technique selection — skips disk-only techniques, adjusts to memory + malware triage + memory-based persistence.
 - **Tool failure**: If a tool crashes or times out, the MCP server returns a structured error. The protocol guides the agent to alternative approaches, not dead ends.
 
+## Quantified Accuracy
+
+VALKYRIE ships an **accuracy harness** (`eval/`) that scores findings against documented
+ground truth and emits the report's required false-positive / missed-artifact tables:
+
+```bash
+make eval        # self-test on the bundled fixture
+python eval/run_eval.py --findings <case>/report/findings.json \
+                        --truth eval/ground_truth/nist-hacking-case.json --out <case>/report
+```
+
+Precision is measured only over **asserted** claims, so Tier-3 inferences are never
+mistaken for hallucinations — and the persistent loop records F1 per iteration to prove
+a first→final improvement. Ground-truth sets: NIST CFReDS Hacking Case (disk), a public
+memory-image template, and a synthetic Entra/Azure/M365 sample (scores P/R/F1 = 1.0). See
+[`eval/README.md`](eval/README.md).
+
 ## Judging Criteria Alignment
+
+The SANS FIND EVIL! Stage-2 rubric weights three axes equally; the called-out qualities
+(hallucination management, persistent loop, guardrails, audit trail) map as follows:
 
 | Criterion | Where to Look |
 |-----------|--------------|
-| **#1 Autonomous Execution** (tiebreaker) | Run `/investigate --guided` — 6 phases execute without human input. See `skills/ir-analysis/SKILL.md` |
-| **#2 IR Accuracy** | [`docs/accuracy-report.md`](docs/accuracy-report.md) — 19 findings, 0 hallucinations, 2 self-corrections |
-| **#3 Breadth & Depth** | 8 technique protocols (incl. AI-adversary detection), 11 MCP tools, 17 Volatility plugins. See `skills/ir-analysis/protocols/` |
-| **#4 Constraint Implementation** | [`docs/architecture-diagram.md`](docs/architecture-diagram.md) — 5 architectural layers, 46 unit tests |
-| **#5 Audit Trail** | `logs/tool-execution.jsonl` in every case directory. Every finding cites `[TOOL: name, evidence, detail]` |
-| **#6 Usability** | One-command install, `CLAUDE.md` project guide, fallback strategies documented |
+| **Autonomous Execution Quality** | `/investigate --guided` runs 6 phases unattended; `--loop` self-corrects to verifiable success. See `skills/ir-analysis/protocols/orchestrator.md` |
+| **IR Accuracy / hallucination mgmt** | Per-finding verdicts (`protocols/verification.md`) + quantified `eval/` harness. Confirmed vs inferred is a first-class output; UNVERIFIED claims are flagged, not hidden |
+| **Breadth & Depth** | 9 technique protocols (incl. AI-adversary + **cloud**), 12 MCP tools, 17 Volatility plugins, host **and** identity-plane coverage |
+| **Persistent Learning Loop** | `protocols/persistent-loop.md` — `logs/progress.jsonl` with first→final accuracy delta and full iteration traces |
+| **Architectural guardrails** | [`docs/architecture-diagram.md`](docs/architecture-diagram.md) — 5 architectural layers, explicitly separated from prompt-based guidance |
+| **Audit Trail** | `logs/tool-execution.jsonl` — every line has an `execution_id`; every finding cites `exec:<id>` so any claim traces to one tool execution + its SHA256 |
+| **Documentation / Usability** | One-command install, CI (81 tests), `CLAUDE.md`, dataset docs, fallback strategies |
 
 ## Novel Contribution
 
 VALKYRIE's analytical reasoning framework is inspired by [Blevene/structured-analysis-skill](https://github.com/Blevene/structured-analysis-skill) (Apache 2.0), which implements CIA/IC Structured Analytic Techniques. The novel contributions are:
 
-- **IR-specific technique library** — 8 forensic techniques (timeline reconstruction, artifact correlation, ACH-adapted hypothesis testing, memory analysis, persistence enumeration, log analysis, malware triage, AI-adversary analysis)
+- **IR-specific technique library** — 9 forensic techniques (timeline reconstruction, artifact correlation, ACH-adapted hypothesis testing, memory analysis, persistence enumeration, log analysis, malware triage, AI-adversary analysis, and cloud-log analysis)
 - **AI-adversary detection** — First IR agent to reason about AI-driven attacks as a distinct threat category, grounded in GTIG, MITRE ATLAS v5.4.0, Arctic Wolf, and Unit42 threat intelligence. Six analytical lenses: behavioral entropy, credential automation, LOLBin chaining, API-based attacks, absence-of-evidence, and decoy artifact detection
+- **Per-finding verification** — Chain-of-verification grounded in *fresh tool calls* (never re-reasoning, which only inflates confidence): every finding is CONFIRMED / INFERRED / UNVERIFIED, so hallucinations are caught and flagged rather than presented as fact
 - **Forensic self-correction** — Three-layer validation (artifact existence, temporal consistency, analytical coherence) catching IR-specific hallucination patterns
-- **Custom MCP server** — 11 typed functions with denylist enforcement, SHA256 audit logging, ISF symbol auto-resolution, controlled process memory dump, FLOSS-first string extraction
-- **Evidence tiering** — Distinguishing confirmed findings from analytical inferences with explicit confidence scoring
+- **Measurable persistent learning loop** — Iterates to verifiable success criteria with a demonstrable first→final accuracy delta and preserved iteration traces
+- **Cloud-forensics breadth** — Entra ID / Azure / M365 identity-plane analysis (impossible travel, MFA fatigue, OAuth consent abuse, BEC inbox rules…) mapped to ATT&CK for Cloud — for attacks that never touch a host disk
+- **Quantified accuracy harness** — precision/recall/F1 vs documented ground truth, distinguishing asserted claims from inferences
+- **Custom MCP server** — 12 typed functions with denylist enforcement, `execution_id`-stamped SHA256 audit logging, ISF symbol auto-resolution, controlled process memory dump, FLOSS-first string extraction
 - **Resilient memory analysis** — Pool-scanning fallback when ISF symbols are missing, with graceful degradation documented in findings
+
+### Built on frontier Claude
+
+VALKYRIE targets **Claude Opus 4.8** — the same Claude Code + MCP reference architecture
+SANS demoed — and uses its extended-reasoning for hypothesis generation and verifier
+adjudication. Forensic findings are *verifiable rewards* (an artifact either re-derives at
+its cited offset or it does not), which is exactly what frontier reasoning + grounded
+verification exploit. Running on a frontier model rather than a small local default is a
+deliberate accuracy choice for high-stakes IR.
 
 ## License
 

@@ -14,6 +14,7 @@ import re
 from typing import Any
 
 from parsers.common import (
+    MAX_RAW_OUTPUT_BYTES,
     ToolExecutionError,
     build_tool_response,
     compute_sha256,
@@ -53,6 +54,7 @@ def get_partition_layout(
             data=None,
             evidence_file=image_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"mmls failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -68,6 +70,7 @@ def get_partition_layout(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -152,6 +155,7 @@ def list_files(
             data=None,
             evidence_file=image_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"fls failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -170,6 +174,7 @@ def list_files(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -283,6 +288,7 @@ def extract_file(
         args,
         tool_name="extract_file",
         case_dir=case_dir,
+        capture_bytes=True,  # binary-safe: preserve exact bytes for hash integrity
     )
 
     if result["exit_code"] != 0:
@@ -291,14 +297,31 @@ def extract_file(
             data=None,
             evidence_file=image_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"icat failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
 
-    # icat outputs the file content to stdout — write it to the output file
+    # Integrity guard: if the file exceeds the subprocess capture cap, the bytes
+    # would be truncated and the resulting SHA256 would not match the true file.
+    # Refuse rather than emit a misleading hash.
+    if result.get("truncated"):
+        return build_tool_response(
+            tool_name="extract_file",
+            data=None,
+            evidence_file=image_path,
+            duration_seconds=result["duration_seconds"],
+            error=(
+                f"Extracted file exceeds the {MAX_RAW_OUTPUT_BYTES // (1024 * 1024)} MB "
+                "capture limit; refusing to write a truncated artifact with an "
+                "inaccurate hash. Extract this file out-of-band for full-fidelity analysis."
+            ),
+        )
+
+    # icat outputs the raw file content to stdout — write the exact bytes.
     try:
         with open(output_path, "wb") as f:
-            f.write(result["stdout"].encode("latin-1"))  # Preserve binary content
+            f.write(result["stdout_bytes"])
     except OSError as e:
         return build_tool_response(
             tool_name="extract_file",
@@ -308,7 +331,8 @@ def extract_file(
         )
 
     # Compute hash of the extracted file
-    file_hash = compute_sha256(open(output_path, "rb").read())
+    with open(output_path, "rb") as f:
+        file_hash = compute_sha256(f.read())
 
     return build_tool_response(
         tool_name="extract_file",
@@ -321,5 +345,6 @@ def extract_file(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
