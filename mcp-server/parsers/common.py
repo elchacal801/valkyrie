@@ -224,6 +224,36 @@ def _write_audit_entry(
         logger.warning("Failed to write audit entry: %s", e)
 
 
+def record_in_process_execution(
+    *,
+    case_dir: str | None,
+    tool_name: str,
+    command: list[str],
+    output_text: str,
+    duration_seconds: float = 0.0,
+) -> tuple[str, str]:
+    """Audit-log a tool that parsed evidence in-process (no subprocess) and mint a
+    unique execution_id, so its findings are as traceable as subprocess-backed tools.
+
+    Returns ``(execution_id, output_sha256)``.
+    """
+    execution_id = _next_execution_id()
+    output_sha256 = compute_sha256(output_text)
+    if case_dir:
+        _write_audit_entry(
+            case_dir=case_dir,
+            execution_id=execution_id,
+            tool_name=tool_name,
+            command=command,
+            exit_code=0,
+            output_sha256=output_sha256,
+            output_length=len(output_text),
+            duration_seconds=duration_seconds,
+            truncated=False,
+        )
+    return execution_id, output_sha256
+
+
 def parse_csv_output(
     raw_output: str,
     *,

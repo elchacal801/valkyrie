@@ -42,7 +42,7 @@ from mcp.types import TextContent, Tool
 # Add the mcp-server directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from tools import disk, memory, registry, scanner, timeline
+from tools import cloud, disk, memory, registry, scanner, timeline
 from parsers.common import ToolExecutionError
 import denylist
 
@@ -402,6 +402,34 @@ TOOLS: list[Tool] = [
             "required": ["file_path"],
         },
     ),
+    # --- Cloud Tools (Entra ID / Azure / M365) ---
+    Tool(
+        name="analyze_cloud_logs",
+        description=(
+            "Analyze cloud identity / control-plane logs for identity-based attacks "
+            "where no host disk is touched. Parses Entra ID sign-in and audit logs, "
+            "Azure activity logs, and Microsoft 365 Unified Audit Log (JSON/NDJSON/CSV). "
+            "Detects impossible travel, MFA fatigue, risky/legacy sign-ins, password "
+            "spray/brute force, illicit OAuth consent grants, service-principal secret "
+            "additions, privileged role assignments, suspicious inbox rules (BEC), and "
+            "mass downloads — each mapped to MITRE ATT&CK for Cloud. Read-only."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "log_path": {
+                    "type": "string",
+                    "description": "Path to the cloud log export (.json/.ndjson/.csv)",
+                },
+                "log_type": {
+                    "type": "string",
+                    "description": "Optional hint; auto-detected when omitted (all detectors run regardless)",
+                    "enum": ["entra_signin", "entra_audit", "azure_activity", "m365_ual"],
+                },
+            },
+            "required": ["log_path"],
+        },
+    ),
 ]
 
 
@@ -495,6 +523,12 @@ async def handle_tool_call(name: str, arguments: dict) -> str:
                 file_path=arguments["file_path"],
                 min_length=arguments.get("min_length", 6),
                 encoding=arguments.get("encoding", "both"),
+                case_dir=case_dir,
+            )
+        elif name == "analyze_cloud_logs":
+            result = cloud.analyze_cloud_logs(
+                log_path=arguments["log_path"],
+                log_type=arguments.get("log_type"),
                 case_dir=case_dir,
             )
         else:

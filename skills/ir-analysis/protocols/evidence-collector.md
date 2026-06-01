@@ -41,6 +41,7 @@ For each file in the evidence directory (recursive scan):
 | `.raw`, `.vmem`, `.lime`, `.dmp` (memory signature) | Memory dump | `memory_dump` |
 | `.evtx` | Windows Event Log | `event_log` |
 | `NTUSER.DAT`, `SYSTEM`, `SOFTWARE`, `SAM`, `SECURITY` | Registry hive | `registry_hive` |
+| `.json`, `.ndjson`, `.csv` with Entra/Azure/M365 fields (`userPrincipalName`, `clientAppUsed`, `activityDisplayName`, `operationName`, `Workload`, `AuditData`) | Cloud log export | `cloud_log` |
 | `.pcap`, `.pcapng` | Network capture | `network_capture` |
 | `.prefetch`, `.pf` | Prefetch files | `prefetch` |
 | Other | Unknown | `other` |

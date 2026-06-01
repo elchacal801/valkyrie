@@ -44,6 +44,7 @@ Flags combine with modes: `--guided --lean --evidence-path /cases/001/evidence` 
 | `memory` | `protocols/techniques/memory-analysis.md` | `analysis/memory-analysis.json` | Deep Analysis | Memory dump |
 | `persistence` | `protocols/techniques/persistence-enumeration.md` | `analysis/persistence-enumeration.json` | Deep Analysis | Disk image |
 | `logs` | `protocols/techniques/log-analysis.md` | `analysis/log-analysis.json` | Deep Analysis | Log files (.evtx) |
+| `cloud` | `protocols/techniques/cloud-log-analysis.md` | `analysis/cloud-log-analysis.json` | Deep Analysis | Cloud logs (Entra/Azure/M365) |
 | `malware` | `protocols/techniques/malware-triage.md` | `analysis/malware-triage.json` | Deep Analysis | Suspicious files |
 | `ai-adversary` | `protocols/techniques/ai-adversary-analysis.md` | `analysis/ai-adversary-analysis.json` | Correlation | 2+ Phase 3 outputs |
 
@@ -122,6 +123,7 @@ After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess
 | `.raw`, `.vmem`, `.lime`, `.dmp` (memory signature) | Memory Dump | memory, correlation |
 | `.evtx` | Windows Event Logs | logs, timeline |
 | `.reg`, `NTUSER.DAT`, `SYSTEM`, `SOFTWARE`, `SAM` | Registry Hives | persistence |
+| `.json`, `.ndjson`, `.csv` (Entra/Azure/M365 export) | Cloud Log | cloud |
 | `.pcap`, `.pcapng` | Network Capture | (future: network-analysis) |
 
 ### Technique Selection Matrix
@@ -133,9 +135,12 @@ After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess
 | Disk + Memory | timeline, persistence, memory, correlation, hypothesis |
 | Disk + Logs | timeline, persistence, logs, correlation |
 | Disk + Memory + Logs | timeline, persistence, memory, logs, correlation, hypothesis |
+| Cloud logs present | cloud (+ correlation/hypothesis when host evidence is also present) |
 | Unknown / mixed | Use `--guided` mode, inventory first |
 
 **Rule**: When 2+ evidence types are present, ALWAYS include `correlation` and `hypothesis` — these produce Tier 2 and Tier 3 findings and demonstrate analytical reasoning (Criterion #1).
+
+**Cloud rule**: When `cloud_log` evidence is present, ALWAYS include `cloud`. If host evidence (disk/memory/logs) is also present, add `correlation` to tie cloud account compromise to host activity (a strong breadth + depth signal).
 
 ### AI-Adversary Auto-Selection Triggers
 
@@ -409,7 +414,7 @@ a result worse than a prior iteration (regression guard).
 
 | Tier | Techniques | Dependencies | Dispatch |
 |------|-----------|-------------|----------|
-| 1 (Independent) | timeline, memory, persistence, logs, malware | `inventory.json` + `triage.json` | Parallel subagents |
+| 1 (Independent) | timeline, memory, persistence, logs, cloud, malware | `inventory.json` + `triage.json` | Parallel subagents |
 | 2 (Dependent) | correlation, hypothesis, ai-adversary | ALL Tier 1 outputs in `analysis/` | Parallel subagents (after Tier 1 completes) |
 
 > **Note on ai-adversary placement**: The ai-adversary technique consumes all Tier 1 outputs and benefits from reading `artifact-correlation.json` (decoy candidates, absence indicators). For v1, it runs in parallel with correlation and hypothesis (Option A — simpler orchestration). A future optimization (Option B) would sequence it after correlation for richer input.
