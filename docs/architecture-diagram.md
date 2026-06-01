@@ -10,11 +10,14 @@
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                VALKYRIE Skill Framework                    │  │
 │  │                                                           │  │
-│  │  SKILL.md ──► Orchestrator ──► 8 Technique Protocols      │  │
-│  │  /investigate    │                                        │  │
+│  │  SKILL.md ──► Orchestrator ──► 9 Technique Protocols      │  │
+│  │  /investigate    │            (hypothesis-driven swarm)    │  │
 │  │                  ├─► Evidence Collector                    │  │
 │  │                  ├─► Self-Correction (3 layers)            │  │
-│  │                  └─► Report Generator                     │  │
+│  │                  ├─► Verification (CONFIRMED/INFERRED/      │  │
+│  │                  │     UNVERIFIED, grounded in re-runs)     │  │
+│  │                  ├─► Persistent Loop (measurable delta)     │  │
+│  │                  └─► Report Generator (+ Verif. Ledger)    │  │
 │  │                                                           │  │
 │  │  ┌─────────────────────────────────────────────────────┐  │  │
 │  │  │              Technique Protocols                     │  │  │
@@ -22,6 +25,7 @@
 │  │  │  hypothesis-testing       │  memory-analysis         │  │  │
 │  │  │  persistence-enumeration  │  log-analysis            │  │  │
 │  │  │  malware-triage           │  ai-adversary-analysis   │  │  │
+│  │  │  cloud-log-analysis (Entra ID / Azure / M365)        │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                              │                                   │
@@ -42,9 +46,9 @@
 │  │       │                                                    │  │
 │  │  ┌────┴─────────────────────────────────────────────────┐  │  │
 │  │  │  denylist.py              parsers/common.py          │  │  │
-│  │  │  48 blocked binaries      safe_subprocess()          │  │  │
+│  │  │  73 blocked binaries      safe_subprocess()          │  │  │
 │  │  │  argument validation      shell=False ALWAYS         │  │  │
-│  │  │  path write protection    SHA256 audit logging       │  │  │
+│  │  │  path write protection    execution_id + SHA256 audit│  │  │
 │  │  │                           output truncation          │  │  │
 │  │  └──────────────────────────────────────────────────────┘  │  │
 │  │       │                                                    │  │
@@ -56,6 +60,7 @@
 │  │  │  memory.py    ── volatility3 (17-plugin allowlist)   │  │  │
 │  │  │  registry.py  ── regripper, RECmd                    │  │  │
 │  │  │  scanner.py   ── yara, strings/FLOSS                 │  │  │
+│  │  │  cloud.py     ── Entra ID / Azure / M365 (read-only) │  │  │
 │  │  └──────────────────────────────────────────────────────┘  │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                              │                                   │
@@ -108,7 +113,7 @@ VALKYRIE enforces evidence integrity through **5 architectural layers**. These a
 
 ### Layer 1: Typed MCP Functions (Architectural)
 
-The MCP server exposes **11 typed functions**, not a generic shell. The agent can call `get_partition_layout(image_path)` or `analyze_memory(dump_path, plugin)`, but it **cannot** construct arbitrary shell commands. This is the most fundamental constraint — the attack surface is limited to 10 well-defined operations.
+The MCP server exposes **12 typed functions**, not a generic shell. The agent can call `get_partition_layout(image_path)` or `analyze_memory(dump_path, plugin)`, but it **cannot** construct arbitrary shell commands. This is the most fundamental constraint — the attack surface is limited to 12 well-defined operations.
 
 **What it prevents**: Arbitrary command execution, filesystem modification, network access
 **How it's enforced**: Python MCP server only registers specific `Tool` objects; JSON-RPC dispatch only routes to known handlers
@@ -116,8 +121,8 @@ The MCP server exposes **11 typed functions**, not a generic shell. The agent ca
 
 ### Layer 2: Denylist + Argument Validation (Architectural)
 
-Even within the 10 typed functions, the `denylist.py` module checks every subprocess call before execution:
-- **48 blocked binaries**: rm, dd, shred, wget, curl, ssh, bash, python, etc.
+Even within the 12 typed functions, the `denylist.py` module checks every subprocess call before execution:
+- **73 blocked binaries**: rm, dd, shred, wget, curl, ssh, bash, python, etc.
 - **Dangerous argument blocking**: `sed -i`, `find -exec`, `find -delete`, `tar -x`, `awk system()`
 - **Write path protection**: Any write operation targeting a registered evidence directory is blocked
 
@@ -165,14 +170,14 @@ This is the final backstop. Even if all software layers are compromised, the ope
 
 In addition to the 5 architectural layers, VALKYRIE uses prompt-based guardrails in the skill protocols:
 
-| Guardrail | Location | What It Does | Limitation |
+| Guardrail | Location | What It Does | Limitation (and what mitigates it) |
 |-----------|----------|-------------|------------|
-| Pipeline sequencing | `orchestrator.md` | Instructs agent to follow 6-phase pipeline in order | Agent could skip phases if it decides to |
-| Finding verification | `self-correction.md` | Instructs agent to re-verify findings with MCP tools | Agent could claim verification without actually running tools |
-| Citation enforcement | `SKILL.md` | Requires every finding to cite specific tool output | Agent could generate plausible-looking citations without backing |
-| Evidence tier assignment | `SKILL.md` | Requires distinguishing confirmed findings from inferences | Agent could assign wrong tier |
+| Pipeline sequencing | `orchestrator.md` | Instructs agent to follow the 6-phase pipeline in order | Agent could skip phases; the standardized report makes a skipped phase visible |
+| Finding verification | `verification.md` / `self-correction.md` | Re-derives each finding from a fresh tool call (CONFIRMED/INFERRED/UNVERIFIED) | A claimed CONFIRMED **requires** a `verifier_exec_id` that must exist in `tool-execution.jsonl` — a fabricated verification is detectable in the audit log |
+| Citation enforcement | `SKILL.md` | Requires every finding to cite a specific tool output | Citations carry an `execution_id`; a citation with no matching audit line is detectable |
+| Evidence tier assignment | `SKILL.md` | Distinguishes confirmed findings from inferences | The `eval/` harness scores asserted vs inferred separately, surfacing miscalibration |
 
-**These guardrails are valuable for quality but not trustworthy for safety.** Evidence protection relies on the 5 architectural layers, not on prompt compliance.
+**These guardrails are valuable for quality but not trustworthy for safety.** Evidence protection relies on the 5 architectural layers, not on prompt compliance. The execution-id'd audit log makes *quality* guardrail compliance independently checkable, which is the next best thing.
 
 ---
 
@@ -209,13 +214,19 @@ Audit Trail (tool-execution.jsonl — every call logged)
 
 VALKYRIE uses **Pattern 6: Purpose-Built MCP Server** from the hackathon guidance — described by organizers as "the most sound architecture in the evaluation."
 
-Combined with **Claude Code as Direct Agent Extension** (Pattern 2), this creates a hybrid architecture:
+Combined with **Claude Code as Direct Agent Extension** (Pattern 2), this creates a hybrid architecture that exercises all three execution patterns the hackathon recognizes:
 
-- **Claude Code**: Reasoning engine, context management, skill framework, subagent dispatch
-- **Custom MCP Server**: Safety enforcement, tool wrapping, data translation, audit logging
-- **Skill Framework**: Analytical methodology, self-correction, evidence tiering, reporting
+- **Single-agent** — the default `/investigate` direct/guided flow (reference-grade, low risk)
+- **Multi-agent** — Phase 3 dispatches parallel Tier-1 subagents, with an early contradiction pass before Tier-2 (a hypothesis-driven swarm)
+- **Persistent loop** — `--loop` iterates to verifiable success with a measured first→final accuracy delta
 
-The analytical complexity lives in the skill framework (markdown protocols), not in the MCP server (Python code). The MCP server is deliberately lean — 5 tool modules, ~1500 lines of Python. The skill framework is where the intellectual work happens — 8 technique protocols (including AI-adversary detection), orchestrator, self-correction, evidence collector, 5 templates.
+Layering:
+
+- **Claude Code**: Reasoning engine (Claude Opus 4.8), context management, skill framework, subagent dispatch
+- **Custom MCP Server**: Safety enforcement, tool wrapping, data translation, execution-id'd audit logging
+- **Skill Framework**: Analytical methodology, self-correction + verification, persistent loop, evidence tiering, reporting
+
+The analytical complexity lives in the skill framework (markdown protocols), not in the MCP server (Python code). The MCP server is deliberately lean — 6 tool modules of typed wrappers. The skill framework is where the intellectual work happens — 9 technique protocols (including AI-adversary and cloud-log analysis), orchestrator, self-correction, verification, persistent loop, evidence collector, and templates.
 
 ---
 
@@ -223,9 +234,11 @@ The analytical complexity lives in the skill framework (markdown protocols), not
 
 | Component | Files | Lines (approx) | Purpose |
 |-----------|-------|----------------|---------|
-| MCP Server | 8 .py files | ~1,500 | Safety, tool wrapping, audit logging |
-| Skill Framework | 11 .md files | ~3,000 | Analytical reasoning, methodology, self-correction |
-| Templates | 5 files | ~400 | Structured output formats |
-| Hooks | 2 .sh files | ~100 | Evidence protection, audit logging |
-| Configuration | 1 .json file | ~60 | MCP registration, permissions |
-| **Total** | **27 core files** | **~5,000** | |
+| MCP Server | 9 .py modules | ~1,900 | Safety, tool wrapping (incl. cloud), execution-id'd audit logging |
+| Skill Framework | 14 .md files | ~3,600 | Analytical reasoning, self-correction, verification, persistent loop |
+| Templates | 5 files | ~450 | Structured output formats (+ verification block / ledger) |
+| Accuracy Harness | `eval/` (script + ground truth + examples) | ~400 | precision/recall/F1 vs documented ground truth |
+| Tests | 5 test files | ~900 | 81 tests: parsers, denylist, server dispatch, hooks, eval, cloud |
+| Hooks | 2 .sh files | ~135 | Evidence protection, audit logging |
+| CI | `.github/workflows` + Makefile | ~60 | Automated tests on 3.10–3.12 |
+| **Total** | **40+ core files** | **~7,500** | |
