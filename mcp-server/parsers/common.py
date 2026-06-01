@@ -60,6 +60,7 @@ def safe_subprocess(
     case_dir: str | None = None,
     tool_name: str = "",
     env: dict[str, str] | None = None,
+    capture_bytes: bool = False,
 ) -> dict[str, Any]:
     """Execute a forensic tool safely with denylist enforcement and audit logging.
 
@@ -72,9 +73,14 @@ def safe_subprocess(
         case_dir: Path to the active case directory for audit logging.
         tool_name: Logical tool name for audit trail (e.g., "get_partition_layout").
         env: Optional environment variable overrides (merged with os.environ).
+        capture_bytes: If True, include the raw, undecoded stdout bytes in the
+            result under "stdout_bytes". Required for binary-safe operations such
+            as file extraction, where lossy UTF-8 decoding would corrupt content
+            and invalidate the SHA256 of the extracted artifact.
 
     Returns:
-        Dict with keys: stdout, stderr, exit_code, sha256, duration_seconds, truncated.
+        Dict with keys: stdout, stderr, exit_code, sha256, duration_seconds,
+        truncated, execution_id (and stdout_bytes when capture_bytes=True).
 
     Raises:
         ToolExecutionError: If the binary is blocked or execution fails.
@@ -133,7 +139,9 @@ def safe_subprocess(
         stderr = result.stderr.decode("latin-1", errors="replace")
 
     # --- Compute integrity hash ---
-    output_hash = compute_sha256(stdout)
+    # On the binary-safe path, hash the raw bytes so the audit hash matches the
+    # exact content written to disk (lossy text decoding would diverge).
+    output_hash = compute_sha256(stdout_bytes if capture_bytes else stdout)
 
     # --- Audit logging ---
     if case_dir:
@@ -143,12 +151,12 @@ def safe_subprocess(
             command=cmd,
             exit_code=result.returncode,
             output_sha256=output_hash,
-            output_length=len(stdout),
+            output_length=len(stdout_bytes) if capture_bytes else len(stdout),
             duration_seconds=round(duration, 3),
             truncated=truncated,
         )
 
-    return {
+    response = {
         "stdout": stdout,
         "stderr": stderr,
         "exit_code": result.returncode,
@@ -156,6 +164,9 @@ def safe_subprocess(
         "duration_seconds": round(duration, 3),
         "truncated": truncated,
     }
+    if capture_bytes:
+        response["stdout_bytes"] = stdout_bytes
+    return response
 
 
 def _write_audit_entry(

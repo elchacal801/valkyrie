@@ -275,7 +275,7 @@ def _filter_by_date(
     for row in rows:
         for col in date_columns:
             val = row.get(col, "")
-            if val and date_str <= val if after else val <= date_str:
+            if val and (date_str <= val if after else val <= date_str):
                 filtered.append(row)
                 break
 

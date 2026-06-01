@@ -159,13 +159,19 @@ def analyze_memory(
         env=symbol_env,
     )
 
-    # Volatility may also be installed as "vol.py" or "volatility3"
+    # Volatility may also be installed as "vol.py", "volatility3", or only as a
+    # Python module. Each candidate is (binary, prefix_args) so the module form
+    # is invoked correctly under shell=False (not as a single bogus binary name).
     if result["exit_code"] != 0 and "not found" in result.get("stderr", "").lower():
-        for alt_binary in ["vol.py", "volatility3", "python3 -m volatility3"]:
+        for alt_binary, prefix in [
+            ("vol.py", []),
+            ("volatility3", []),
+            ("python3", ["-m", "volatility3"]),
+        ]:
             try:
                 result = safe_subprocess(
                     alt_binary,
-                    args,
+                    prefix + args,
                     timeout=300,
                     tool_name=f"analyze_memory:{plugin}",
                     case_dir=case_dir,
