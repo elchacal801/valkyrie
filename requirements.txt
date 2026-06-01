@@ -1,0 +1,10 @@
+# VALKYRIE runtime + test dependencies (pinned ranges for reproducibility).
+# Forensic tools (Volatility 3, Sleuth Kit, Plaso, YARA, RegRipper, FLOSS) are
+# provided by the SIFT Workstation, not pip — see install.sh.
+
+# Runtime
+mcp>=1.0.0,<2.0
+
+# Test / CI
+pytest>=7.0,<9.99
+pytest-asyncio>=0.21
