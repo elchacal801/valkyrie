@@ -1,0 +1,33 @@
+{
+  "case_id": "EXAMPLE-001",
+  "total_findings": 3,
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "title": "Malicious service executable + C2 channel",
+      "description": "evil.exe established a Run key persistence entry and beaconed to 10.0.0.5.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "iocs": ["evil.exe", "10.0.0.5"],
+      "citations": ["EXEC-demo-0001"]
+    },
+    {
+      "finding_id": "F-002",
+      "title": "Asserted secondary C2 (intentional hallucination for the test)",
+      "description": "A second beacon to 192.168.1.99 was asserted as confirmed.",
+      "confidence": "HIGH",
+      "evidence_tier": 1,
+      "iocs": ["192.168.1.99"],
+      "citations": ["EXEC-demo-0002"]
+    },
+    {
+      "finding_id": "HT-001",
+      "title": "ACH inference (must NOT be penalized as a hallucination)",
+      "description": "Possible link to threat infrastructure apt-maybe.com.",
+      "confidence": "LOW",
+      "evidence_tier": 3,
+      "iocs": ["apt-maybe.com"],
+      "citations": ["EXEC-demo-0003"]
+    }
+  ]
+}

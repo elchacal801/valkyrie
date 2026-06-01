@@ -1,0 +1,109 @@
+{
+  "dataset": "NIST CFReDS Hacking Case",
+  "dataset_url": "https://cfreds.nist.gov/all/NIST/HackingCase",
+  "description": "Abandoned-laptop scenario. A 4.5 GB NTFS disk image; the documented solution centers on suspect Greg Schardt (alias 'Mr. Evil') and a suite of installed network-attack tools. This file encodes widely-published, stable facts. Items flagged \"verify\": true must be reconciled against the official CFReDS answer key before reporting a headline number; they are kept required: false until verified so they do not skew scoring.",
+  "notes_for_reproduction": "Obtain the image from the CFReDS portal, run `/investigate --guided` against it, then score report/findings.json with eval/run_eval.py. Verify each item below against the official answer key and flip required:true once confirmed.",
+  "benign_allowlist": [
+    "windows", "system32", "explorer.exe", "svchost.exe", "services.exe",
+    "Program Files", "ntuser.dat", "Documents and Settings"
+  ],
+  "items": [
+    {
+      "id": "GT-001",
+      "type": "identity",
+      "description": "Suspect's real name is Greg Schardt",
+      "match_any": ["greg schardt", "schardt"],
+      "required": true,
+      "source": "CFReDS Hacking Case — widely documented solution"
+    },
+    {
+      "id": "GT-002",
+      "type": "identity",
+      "description": "Suspect's online alias / nickname is 'Mr. Evil'",
+      "match_any": ["mr. evil", "mr evil", "mrevil"],
+      "required": true,
+      "source": "CFReDS Hacking Case — widely documented solution"
+    },
+    {
+      "id": "GT-003",
+      "type": "tool",
+      "description": "Network discovery tool 'Look@LAN' installed",
+      "match_any": ["look@lan", "lookatlan", "look at lan"],
+      "mitre": "T1046",
+      "required": true,
+      "source": "Installed-programs enumeration"
+    },
+    {
+      "id": "GT-004",
+      "type": "tool",
+      "description": "Packet sniffer 'Ethereal' installed",
+      "match_any": ["ethereal"],
+      "mitre": "T1040",
+      "required": true,
+      "source": "Installed-programs enumeration"
+    },
+    {
+      "id": "GT-005",
+      "type": "tool",
+      "description": "Packet-capture driver 'WinPcap' installed",
+      "match_any": ["winpcap"],
+      "mitre": "T1040",
+      "required": true,
+      "source": "Installed-programs enumeration"
+    },
+    {
+      "id": "GT-006",
+      "type": "tool",
+      "description": "Password recovery / sniffing tool 'Cain & Abel' installed",
+      "match_any": ["cain & abel", "cain and abel", "cain"],
+      "mitre": "T1003",
+      "required": true,
+      "source": "Installed-programs enumeration"
+    },
+    {
+      "id": "GT-007",
+      "type": "tool",
+      "description": "Wireless scanner 'NetStumbler' installed",
+      "match_any": ["netstumbler"],
+      "mitre": "T1046",
+      "required": true,
+      "source": "Installed-programs enumeration"
+    },
+    {
+      "id": "GT-008",
+      "type": "tool",
+      "description": "Traffic anonymizer 'Anonymizer' installed",
+      "match_any": ["anonymizer"],
+      "mitre": "T1090",
+      "required": true,
+      "source": "Installed-programs enumeration"
+    },
+    {
+      "id": "GT-009",
+      "type": "network",
+      "description": "Primary NIC MAC address (reconcile exact value with answer key)",
+      "match_any": ["0010a4933e09", "00:10:a4:93:3e:09", "00-10-a4-93-3e-09"],
+      "required": false,
+      "verify": true,
+      "source": "SOFTWARE hive / Look@LAN config — verify against official key"
+    },
+    {
+      "id": "GT-010",
+      "type": "email",
+      "description": "Suspect email alias (reconcile exact value with answer key)",
+      "match_any": ["mrevilrules@yahoo.com", "mrevilrules"],
+      "required": false,
+      "verify": true,
+      "source": "Email/IRC artifacts — verify against official key"
+    },
+    {
+      "id": "GT-011",
+      "type": "hostname",
+      "description": "Computer/host name (reconcile exact value with answer key)",
+      "match_any": ["n-1a9odn6zxk4lq"],
+      "required": false,
+      "verify": true,
+      "source": "SYSTEM hive ComputerName — verify against official key"
+    }
+  ]
+}

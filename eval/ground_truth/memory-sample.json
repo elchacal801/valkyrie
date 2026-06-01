@@ -1,0 +1,49 @@
+{
+  "dataset": "Public memory image (TEMPLATE — populate from the documented solution)",
+  "dataset_url": "https://cfreds.nist.gov/  (or a community image such as Volatility Foundation / MemLabs samples)",
+  "description": "TEMPLATE for benchmarking memory analysis. Choose a public memory image that has a documented solution, run `/investigate memory` (or `--guided`) against it, then fill each item's exact value from the published answer and flip required:true. Items left verify:true / required:false do not affect the score until verified. This showcases VALKYRIE's memory depth alongside the disk-based NIST case.",
+  "notes_for_reproduction": "1) Download a public memory image with a known solution. 2) Run VALKYRIE. 3) For each documented artifact (malicious PID/name, injected region, C2 endpoint, persistence, credential theft), set match_any to the published value and required:true. 4) Score with eval/run_eval.py.",
+  "benign_allowlist": ["System", "smss.exe", "csrss.exe", "wininit.exe", "services.exe", "lsass.exe", "svchost.exe", "explorer.exe"],
+  "items": [
+    {
+      "id": "MEM-001",
+      "type": "process",
+      "description": "Malicious/injected process name or PID (fill from solution)",
+      "match_any": ["<malicious-process-name-or-pid>"],
+      "mitre": "T1055",
+      "required": false,
+      "verify": true,
+      "source": "Documented solution — process listing / malfind"
+    },
+    {
+      "id": "MEM-002",
+      "type": "network",
+      "description": "C2 / external connection endpoint (fill from solution)",
+      "match_any": ["<c2-ip-or-domain>"],
+      "mitre": "T1071",
+      "required": false,
+      "verify": true,
+      "source": "Documented solution — netscan"
+    },
+    {
+      "id": "MEM-003",
+      "type": "injection",
+      "description": "Injected code indicator (named pipe / shellcode marker) (fill from solution)",
+      "match_any": ["<injection-indicator>"],
+      "mitre": "T1055.001",
+      "required": false,
+      "verify": true,
+      "source": "Documented solution — malfind / strings"
+    },
+    {
+      "id": "MEM-004",
+      "type": "persistence",
+      "description": "Persistence mechanism observed in memory (fill from solution)",
+      "match_any": ["<persistence-indicator>"],
+      "mitre": "T1547",
+      "required": false,
+      "verify": true,
+      "source": "Documented solution — svcscan / registry"
+    }
+  ]
+}
