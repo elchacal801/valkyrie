@@ -190,7 +190,8 @@ Precision is measured only over **asserted** claims, so Tier-3 inferences are ne
 mistaken for hallucinations — and the persistent loop records F1 per iteration to prove
 a first→final improvement. Ground-truth sets: NIST CFReDS Hacking Case (disk), a public
 memory-image template, and a synthetic Entra/Azure/M365 sample (scores P/R/F1 = 1.0). See
-[`eval/README.md`](eval/README.md).
+[`eval/README.md`](eval/README.md). To reproduce on real evidence end-to-end, follow the
+[live-run runbook](docs/live-run-runbook.md).
 
 ## Judging Criteria Alignment
 
