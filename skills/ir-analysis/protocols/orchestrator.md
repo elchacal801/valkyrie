@@ -16,6 +16,7 @@ Parse the skill invocation arguments:
 | `--resume <case-id>` | **Resume** — continue existing investigation |
 | `--iterate <case-id>` | **Iterate** — re-run with corrected approach |
 | `--iterate <case-id> <technique>` | **Iterate (scoped)** — re-run specific technique(s) |
+| `--loop <case-id>` | **Loop** — iterate until verifiable success/stagnation (see `protocols/persistent-loop.md`) |
 | `--lean` | **Lean** — triage + timeline + persistence only |
 | `--no-enrich` | Flag — disable IOC enrichment |
 | `--evidence-path <path>` | Flag — specify evidence directory |
@@ -374,6 +375,19 @@ Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is c
 1. Archive only the specified technique's artifact
 2. Re-run only that technique
 3. If the technique's findings changed, offer to re-run Phase 4 (Correlation) and Phase 5 (Self-Correction)
+
+---
+
+## Loop Mode
+
+Read and execute `protocols/persistent-loop.md`. The loop repeatedly iterates the
+investigation on the same evidence — each pass runs self-correction + verification,
+appends a record to `logs/progress.jsonl`, and **course-corrects toward the open
+items** (UNVERIFIED claims, open HIGH issues, missing kill-chain phases) — until
+verifiable success criteria are met, progress stagnates, or `--max-iterations` is
+reached. With `--truth`, each iteration is scored by `eval/run_eval.py` so the report
+can show the iteration-1 → final F1 delta. The loop always terminates and never ships
+a result worse than a prior iteration (regression guard).
 
 ---
 

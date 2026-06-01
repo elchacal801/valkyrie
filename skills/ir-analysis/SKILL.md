@@ -18,6 +18,7 @@ Conduct structured forensic investigations using techniques adapted from intelli
 /investigate --resume <case-id>                 → Resume or update existing investigation
 /investigate --iterate <case-id>                → Re-run with corrected approach or new evidence
 /investigate --iterate <case-id> <technique>    → Re-run specific technique(s) only
+/investigate --loop <case-id>                   → Persistent learning loop: iterate until verifiable success/stagnation
 /investigate --lean                             → Lean mode (triage + timeline + persistence only)
 /investigate --evidence-path <path>             → Specify evidence directory (default: auto-detect)
 /investigate --case-id <id>                     → Specify case identifier (default: auto-generate)
