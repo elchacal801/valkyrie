@@ -472,4 +472,16 @@ After all subagents complete, the orchestrator:
 1. Collects compact summaries (technique name + status + findings + handoff)
 2. Logs any FAILED or PARTIAL techniques
 3. Verifies artifact files exist on disk
-4. Proceeds to the next tier or phase
+4. **Early Contradiction Pass (after Tier 1, before dispatching Tier 2).**
+   Compare findings across the completed Tier-1 techniques for the same artifact
+   (timeline↔memory, memory↔logs, logs↔persistence) using the contradiction
+   patterns in `techniques/artifact-correlation.md` (timestamp mismatch, existence
+   mismatch, process/PID mismatch, hash mismatch). For each contradiction:
+   - attempt to resolve it now by re-invoking the specific MCP tool on the disputed
+     artifact (a contradiction caught here is cheaper than one discovered in Phase 4);
+   - if unresolved, mark both findings LOW confidence and pass the contradiction
+     forward in the Tier-2 subagent context so correlation/hypothesis treat it as a
+     signal rather than silently averaging over it.
+   Record the pass result in `analysis/contradiction-pass.json` (pairs checked,
+   contradictions found, resolved/unresolved).
+5. Proceeds to the next tier or phase
