@@ -631,6 +631,7 @@ class TestBinaryExtractionIntegrity:
         def fake_subprocess(binary, args, **kwargs):
             assert kwargs.get("capture_bytes") is True
             return {
+                "execution_id": "EXEC-test-0001",
                 "stdout": "lossy-text", "stdout_bytes": payload, "stderr": "",
                 "exit_code": 0, "sha256": compute_sha256(payload),
                 "duration_seconds": 0.0, "truncated": False,
@@ -651,6 +652,7 @@ class TestBinaryExtractionIntegrity:
 
         def fake_subprocess(binary, args, **kwargs):
             return {
+                "execution_id": "EXEC-test-0002",
                 "stdout": "", "stdout_bytes": b"partial", "stderr": "",
                 "exit_code": 0, "sha256": "0" * 64,
                 "duration_seconds": 0.0, "truncated": True,
@@ -661,3 +663,40 @@ class TestBinaryExtractionIntegrity:
         assert result["status"] == "error"
         assert "limit" in result["error"].lower()
         assert not (outdir / "out.bin").exists()
+
+
+# ============================================================================
+# Execution-trace traceability (P0.2): finding -> exact tool execution
+# ============================================================================
+
+class TestExecutionTraceability:
+
+    def test_build_tool_response_surfaces_execution_id(self):
+        from parsers.common import build_tool_response
+        r = build_tool_response(tool_name="t", data={}, execution_id="EXEC-abc-0001")
+        assert r["execution_id"] == "EXEC-abc-0001"
+
+    def test_execution_ids_are_unique_and_logged(self, tmp_path):
+        """Each subprocess gets a unique ID, recorded on both the response and
+        the matching tool-execution.jsonl line."""
+        import json
+        import shutil
+        if shutil.which("cat") is None:
+            pytest.skip("cat not available")
+        from parsers.common import safe_subprocess
+        case = tmp_path / "case"
+        case.mkdir()
+        f = tmp_path / "x.txt"
+        f.write_text("hello")
+        r1 = safe_subprocess("cat", [str(f)], case_dir=str(case), tool_name="probe")
+        r2 = safe_subprocess("cat", [str(f)], case_dir=str(case), tool_name="probe")
+        assert r1["execution_id"] != r2["execution_id"]
+        assert r1["execution_id"].startswith("EXEC-")
+
+        lines = (case / "logs" / "tool-execution.jsonl").read_text().strip().splitlines()
+        assert len(lines) == 2
+        entry0 = json.loads(lines[0])
+        assert entry0["execution_id"] == r1["execution_id"]
+        # audit line remains independently traceable
+        for field in ("timestamp", "tool_name", "command", "output_sha256"):
+            assert field in entry0

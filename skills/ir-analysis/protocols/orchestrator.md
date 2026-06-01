@@ -72,6 +72,43 @@ At the start of ANY investigation:
 
 ---
 
+## Execution Logging (cross-cutting)
+
+Two append-only logs in `logs/` make every investigation reproducible and traceable —
+both are required evidence for the judging criteria (audit-trail quality + token usage).
+
+### 1. Tool-execution audit log — `logs/tool-execution.jsonl`
+
+Written automatically by the MCP server for every forensic tool call. Each line carries a
+unique **`execution_id`** (e.g. `EXEC-3f9a1c-0007`), timestamp, command, exit code,
+`output_sha256`, output length, and duration. **Every finding must cite the `execution_id`
+of the tool call that produced its evidence** so a judge can trace any claim to one line.
+
+### 2. Cost & token ledger — `logs/cost-ledger.jsonl`
+
+At the **end of each phase** (and each loop iteration), append one record capturing the
+resource cost of the work just completed. Token counts come from the Claude Code session
+usage; if a precise count is unavailable, record `tokens: null` and keep wall-clock +
+tool-call counts (never fabricate a number).
+
+```json
+{
+  "timestamp": "<ISO-8601>",
+  "phase": "3-deep-analysis",
+  "iteration": 1,
+  "wall_clock_seconds": 142.7,
+  "tool_calls": 18,
+  "tokens": {"input": 84210, "output": 9120, "total": 93330},
+  "cumulative_tokens": 187540,
+  "notes": "timeline + memory + persistence subagents"
+}
+```
+
+The final report's Audit Trail section summarizes this ledger (total tokens, total tool
+calls, wall-clock per phase) — the single-agent "logs with timestamps and token usage" deliverable.
+
+---
+
 ## Evidence Type Assessment
 
 After Phase 1 (Evidence Inventory) completes and writes `inventory.json`, assess the available evidence to drive technique selection.

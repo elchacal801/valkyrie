@@ -188,6 +188,7 @@ def analyze_memory(
             data=None,
             evidence_file=dump_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"Volatility {plugin} failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -210,6 +211,7 @@ def analyze_memory(
         },
         evidence_file=dump_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -506,6 +508,7 @@ def dump_process_memory(
             data=None,
             evidence_file=dump_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"Process dump failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -539,5 +542,6 @@ def dump_process_memory(
         },
         evidence_file=dump_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )

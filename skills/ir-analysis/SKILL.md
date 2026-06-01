@@ -159,12 +159,16 @@ Every claim in every artifact must be cited. No exceptions. Citation formats:
 
 | Source | Format |
 |--------|--------|
-| MCP tool output | `[TOOL: <tool_name>, evidence: <file>, <key_detail>]` |
-| Cross-reference | `[CORROBORATED: <tool1> + <tool2> @ <timestamp_or_detail>]` |
+| MCP tool output | `[TOOL: <tool_name>, exec: <execution_id>, evidence: <file>, <key_detail>]` |
+| Cross-reference | `[CORROBORATED: <tool1>(<exec_id>) + <tool2>(<exec_id>) @ <timestamp_or_detail>]` |
 | Inference | `[INFERENCE: <reasoning summary>, confidence: HIGH\|MEDIUM\|LOW]` |
 | Prior phase | `[PHASE: <phase_name>, finding: <finding_id>]` |
 | User-provided | `[USER: session context]` |
-| Self-correction | `[CORRECTED: was <original>, now <corrected>, verified by <tool>]` |
+| Self-correction | `[CORRECTED: was <original>, now <corrected>, verified by <tool>(<exec_id>)]` |
+
+The `<execution_id>` is the `execution_id` field returned by every MCP tool call and
+recorded on the matching `logs/tool-execution.jsonl` line — it lets a judge trace any
+finding to the exact tool execution (and its `output_sha256`) that produced it.
 
 Tool output is presented as fact when the tool executed successfully. Inferences are never presented as confirmed findings — always qualified with confidence level.
 

@@ -213,6 +213,7 @@ def _try_regripper(
         },
         evidence_file=hive_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -259,6 +260,7 @@ def _try_recmd(
         },
         evidence_file=hive_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 

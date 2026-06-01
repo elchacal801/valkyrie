@@ -79,6 +79,7 @@ def scan_yara(
                 },
                 evidence_file=target_path,
                 output_sha256=result["sha256"],
+                execution_id=result["execution_id"],
                 duration_seconds=result["duration_seconds"],
             )
 
@@ -87,6 +88,7 @@ def scan_yara(
             data=None,
             evidence_file=target_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"YARA scan failed: {result['stderr'][:500]}",
         )
@@ -104,6 +106,7 @@ def scan_yara(
         },
         evidence_file=target_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -221,6 +224,7 @@ def _try_floss(
         },
         evidence_file=file_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -257,6 +261,7 @@ def _run_strings(
             data=None,
             evidence_file=file_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"strings failed: {result['stderr'][:500]}",
         )
@@ -299,6 +304,7 @@ def _run_strings(
         },
         evidence_file=file_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 

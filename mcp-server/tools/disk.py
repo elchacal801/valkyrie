@@ -54,6 +54,7 @@ def get_partition_layout(
             data=None,
             evidence_file=image_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"mmls failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -69,6 +70,7 @@ def get_partition_layout(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -153,6 +155,7 @@ def list_files(
             data=None,
             evidence_file=image_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"fls failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -171,6 +174,7 @@ def list_files(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )
 
@@ -293,6 +297,7 @@ def extract_file(
             data=None,
             evidence_file=image_path,
             output_sha256=result["sha256"],
+            execution_id=result["execution_id"],
             duration_seconds=result["duration_seconds"],
             error=f"icat failed (exit {result['exit_code']}): {result['stderr'][:500]}",
         )
@@ -340,5 +345,6 @@ def extract_file(
         },
         evidence_file=image_path,
         output_sha256=result["sha256"],
+        execution_id=result["execution_id"],
         duration_seconds=result["duration_seconds"],
     )

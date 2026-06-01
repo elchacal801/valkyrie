@@ -9,11 +9,13 @@ Shared infrastructure for all tool modules:
 """
 
 import hashlib
+import itertools
 import json
 import logging
 import os
 import subprocess
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,19 @@ from typing import Any
 import denylist
 
 logger = logging.getLogger("valkyrie.common")
+
+# --- Execution identity -----------------------------------------------------
+# Every subprocess execution gets a unique, human-readable, sortable ID so that
+# any finding can be traced back to the exact tool-execution.jsonl line that
+# produced its evidence (a core FIND EVIL! judging requirement). The per-process
+# session token keeps IDs unique even if the server restarts mid-investigation
+# and appends to the same case audit log.
+_SESSION_TOKEN = uuid.uuid4().hex[:6]
+_exec_counter = itertools.count(1)
+
+
+def _next_execution_id() -> str:
+    return f"EXEC-{_SESSION_TOKEN}-{next(_exec_counter):04d}"
 
 # Maximum rows to return from tools that produce tabular output.
 # Full output is written to the case working directory; only truncated
@@ -143,10 +158,13 @@ def safe_subprocess(
     # exact content written to disk (lossy text decoding would diverge).
     output_hash = compute_sha256(stdout_bytes if capture_bytes else stdout)
 
+    execution_id = _next_execution_id()
+
     # --- Audit logging ---
     if case_dir:
         _write_audit_entry(
             case_dir=case_dir,
+            execution_id=execution_id,
             tool_name=tool_name or binary,
             command=cmd,
             exit_code=result.returncode,
@@ -157,6 +175,7 @@ def safe_subprocess(
         )
 
     response = {
+        "execution_id": execution_id,
         "stdout": stdout,
         "stderr": stderr,
         "exit_code": result.returncode,
@@ -172,6 +191,7 @@ def safe_subprocess(
 def _write_audit_entry(
     *,
     case_dir: str,
+    execution_id: str,
     tool_name: str,
     command: list[str],
     exit_code: int,
@@ -186,6 +206,7 @@ def _write_audit_entry(
     log_file = log_dir / "tool-execution.jsonl"
 
     entry = {
+        "execution_id": execution_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "tool_name": tool_name,
         "command": command,
@@ -306,14 +327,18 @@ def build_tool_response(
     evidence_file: str = "",
     output_sha256: str = "",
     duration_seconds: float = 0.0,
+    execution_id: str = "",
     error: str | None = None,
 ) -> dict[str, Any]:
     """Build a standardized MCP tool response envelope.
 
-    Every tool response includes metadata for audit trail traceability.
+    Every tool response includes metadata for audit trail traceability. The
+    ``execution_id`` ties the response to a specific tool-execution.jsonl line so
+    that any downstream finding can cite the exact execution that produced it.
     """
     response = {
         "tool": tool_name,
+        "execution_id": execution_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "evidence_file": evidence_file,
         "output_sha256": output_sha256,
