@@ -262,7 +262,11 @@ Execute all 6 phases in order. Each phase reads prior phase output from the case
 2. The self-correction protocol reads ALL prior phase outputs and validates across them
 3. Corrections are written to `corrections/` directory
 4. A `corrections/validation-summary.json` summarizes what was checked and what was corrected
-5. **Run `/compact` after this phase** — context is at peak accumulation
+5. **Then read and execute `protocols/verification.md`** — assign every finding an
+   independent verdict (CONFIRMED / INFERRED / UNVERIFIED) by re-deriving its claim
+   from a fresh tool call. Writes `corrections/verification-ledger.json`. Any
+   `UNVERIFIED` asserted claim is downgraded and flagged (never silently dropped).
+6. **Run `/compact` after this phase** — context is at peak accumulation
 
 ### Phase 6 — Reporting
 
@@ -332,7 +336,8 @@ Execute a minimal investigation with only the highest-value techniques:
 1. Phase 1 (Evidence Inventory) — always
 2. Phase 2 (Triage) — always
 3. Phase 3 (Deep Analysis) — **only**: `timeline` + `persistence`
-4. Phase 5 (Self-Correction) — Layer 1 only (artifact existence validation)
+4. Phase 5 (Self-Correction) — Layer 1 only (artifact existence validation), then
+   `verification.md` on CRITICAL/HIGH findings only (verdict CONFIRMED/UNVERIFIED)
 5. Phase 6 (Reporting) — **full standardized report** (see Report Standardization Rule)
 
 Skip Phase 4 (Correlation) entirely. This mode is for fast triage when time is constrained.

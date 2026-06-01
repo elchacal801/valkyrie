@@ -9,14 +9,24 @@
   "confidence": "HIGH | MEDIUM | LOW",
   "evidence_tier": "1 = direct tool output | 2 = cross-referenced | 3 = inference",
 
+  "provenance_exec_id": "EXEC-3f9a1c-0007 (execution_id of the tool call that produced this finding's evidence; resolves to a logs/tool-execution.jsonl line)",
+
+  "verification": {
+    "verdict": "CONFIRMED | INFERRED | UNVERIFIED",
+    "verifier_tool": "list_files (independent tool call used to re-derive the claim; empty for INFERRED)",
+    "verifier_exec_id": "EXEC-3f9a1c-0019",
+    "verifier_output_sha256": "sha256 of the verification tool output",
+    "rationale": "CONFIRMED: file re-listed at the cited path | INFERRED: analytical conclusion, not directly observable | UNVERIFIED: asserted fact could not be re-derived — confidence downgraded and flagged"
+  },
+
   "supporting_tools": [
     "volatility3.pslist",
     "extract_mft"
   ],
 
   "citations": [
-    "[TOOL: volatility3.pslist, evidence: memory.raw, PID: 4832, ImageFileName: svchost.exe]",
-    "[CORROBORATED: extract_mft entry @ 2026-03-15T14:23:00Z + volatility3.pslist PID 4832]"
+    "[TOOL: volatility3.pslist, exec: EXEC-3f9a1c-0007, evidence: memory.raw, PID: 4832, ImageFileName: svchost.exe]",
+    "[CORROBORATED: extract_mft(EXEC-3f9a1c-0011) + volatility3.pslist(EXEC-3f9a1c-0007) @ 2026-03-15T14:23:00Z]"
   ],
 
   "mitre_attack": {
